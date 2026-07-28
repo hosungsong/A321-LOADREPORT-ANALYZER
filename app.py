@@ -7,14 +7,8 @@ import io
 import os
 
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# 유령 공백(U+00A0) 에러 원천 차단을 위해 한 줄로 쫙 폈습니다.
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 GEMINI_API_KEY = "본인의_GEMINI_API_KEY_입력"
 genai.configure(api_key=GEMINI_API_KEY)
@@ -60,19 +54,16 @@ def parse_report_data(text):
             except ValueError:
                 pass
 
-    # 💡 선생님이 뼈저리게 가르쳐주신 13대의 절대 NEO 테일넘버 리스트
     neo_tails = [
         "8364", "8371", "8356", "8398", "8399", 
         "8510", "8511", "8534", "8533", "8582", 
         "8584", "8586", "8705"
     ]
     
-    # 1차 판별 (키워드)
     upper_text = text.upper()
     if any(keyword in upper_text for keyword in ["NEO", "LEAP", "PW11", "A321-25", "A321-27"]):
         fleet_type = "NEO"
         
-    # 2차 강력 판별: AH 라인에 선생님 리스트 중 하나라도 있으면 무조건 NEO
     if "AH" in data["lines"]:
         ah_line = " ".join(data["lines"]["AH"]).upper()
         if any(tail in ah_line for tail in neo_tails):
@@ -111,23 +102,23 @@ def analyze_report(req: AnalyzeRequest):
             if not is_overweight:
                 if max_vrta >= 2.86:
                     status = "RED"
-                    reason = f"Severe Hard Landing\n- VRTA: {max_vrta}g / LIMIT: 2.86g\n- 기준: GW({gw_lbs:,} lbs) <= MLW"
+                    reason = f"Severe Hard Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: VRTA >= 2.86g\n- 기준: GW({gw_lbs:,} lbs) <= MLW"
                 elif max_vrta >= 2.6:
                     status = "AMBER"
-                    reason = f"Hard Landing\n- VRTA: {max_vrta}g / LIMIT: 2.6g\n- 기준: GW({gw_lbs:,} lbs) <= MLW"
+                    reason = f"Hard Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: VRTA >= 2.6g\n- 기준: GW({gw_lbs:,} lbs) <= MLW"
                 else:
                     status = "GREEN"
-                    reason = f"Normal Landing (Limit Not Exceeded)\n- VRTA: {max_vrta}g / LIMIT: 2.6g 미달\n- 기준: GW({gw_lbs:,} lbs) <= MLW"
+                    reason = f"Normal Landing (Limit Not Exceeded)\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: 2.6g 미달\n- 기준: GW({gw_lbs:,} lbs) <= MLW"
             else:
                 if max_vrta >= 2.6:
                     status = "RED"
-                    reason = f"Severe Hard Overweight Landing\n- VRTA: {max_vrta}g / LIMIT: 2.6g\n- 기준: GW({gw_lbs:,} lbs) > MLW"
+                    reason = f"Severe Hard Overweight Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: VRTA >= 2.6g\n- 기준: GW({gw_lbs:,} lbs) > MLW"
                 elif max_vrta >= 1.7:
                     status = "AMBER"
-                    reason = f"Hard Overweight Landing\n- VRTA: {max_vrta}g / LIMIT: 1.7g\n- 기준: GW({gw_lbs:,} lbs) > MLW"
+                    reason = f"Hard Overweight Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: VRTA >= 1.7g\n- 기준: GW({gw_lbs:,} lbs) > MLW"
                 else:
                     status = "GREEN"
-                    reason = f"Normal Landing (Limit Not Exceeded)\n- VRTA: {max_vrta}g / LIMIT: 1.7g 미달\n- 기준: GW({gw_lbs:,} lbs) > MLW"
+                    reason = f"Normal Landing (Limit Not Exceeded)\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: 1.7g 미달\n- 기준: GW({gw_lbs:,} lbs) > MLW"
         
         elif fleet_type == "NEO" and trigger_code.startswith("4"):
             max_nz = 0.0
@@ -165,17 +156,17 @@ def analyze_report(req: AnalyzeRequest):
             if trigger_code == "5300":
                 if vrta <= 0.0 or vrta >= 2.0:
                     status = "RED"
-                    reason = f"Inspection Required (Turbulence)\n- VRTA: {vrta}g\n- LIMIT: <= 0.0g or >= 2.0g"
+                    reason = f"Inspection Required (Turbulence)\n- 측정치: VRTA = {vrta}g\n- LIMIT: <= 0.0g or >= 2.0g"
                 else:
                     status = "GREEN"
-                    reason = f"No Inspection Required\n- VRTA: {vrta}g\n- LIMIT 초과 안함"
+                    reason = f"No Inspection Required\n- 측정치: VRTA = {vrta}g\n- LIMIT 초과 안함"
             else:
                 if vrta <= -1.0 or vrta >= 2.5:
                     status = "RED"
-                    reason = f"Inspection Required (Turbulence)\n- VRTA: {vrta}g\n- LIMIT: <= -1.0g or >= 2.5g"
+                    reason = f"Inspection Required (Turbulence)\n- 측정치: VRTA = {vrta}g\n- LIMIT: <= -1.0g or >= 2.5g"
                 else:
                     status = "GREEN"
-                    reason = f"No Inspection Required\n- VRTA: {vrta}g\n- LIMIT 초과 안함"
+                    reason = f"No Inspection Required\n- 측정치: VRTA = {vrta}g\n- LIMIT 초과 안함"
 
         elif trigger_code in ["5600", "5700"]:
             lata = 0.0
@@ -187,13 +178,13 @@ def analyze_report(req: AnalyzeRequest):
             
             if lata > 0.41:
                 status = "RED"
-                reason = f"Severe High Lateral Acceleration\n- LATA: {lata}g\n- LIMIT: > 0.41g"
+                reason = f"Severe High Lateral Acceleration\n- 측정치: LATA = {lata}g\n- LIMIT: > 0.41g"
             elif lata >= 0.35:
                 status = "AMBER"
-                reason = f"High Lateral Acceleration\n- LATA: {lata}g\n- LIMIT: >= 0.35g"
+                reason = f"High Lateral Acceleration\n- 측정치: LATA = {lata}g\n- LIMIT: >= 0.35g"
             else:
                 status = "GREEN"
-                reason = f"Normal (Limit Not Exceeded)\n- LATA: {lata}g\n- LIMIT 미달 (< 0.35g)"
+                reason = f"Normal (Limit Not Exceeded)\n- 측정치: LATA = {lata}g\n- LIMIT 미달 (< 0.35g)"
                 
         else:
             reason = "정의되지 않은 코드이거나 판별 로직이 없습니다."
