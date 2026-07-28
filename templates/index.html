@@ -79,7 +79,7 @@
                 <canvas id="limitChart"></canvas>
             </div>
 
-            <h3 style="color: #0033a0; text-align: center;">🔀 Decision Flow Chart (AMM 기준)</h3>
+            <h3 style="color: #0033a0; text-align: center;">🔀 Decision Flow Chart (매뉴얼 기준)</h3>
             <div class="mermaid-container">
                 <div class="mermaid" id="flowchart"></div>
             </div>
@@ -175,10 +175,12 @@
             if (data.status.includes('RED')) statusBox.classList.add('status-RED');
             else if (data.status.includes('AMBER')) statusBox.classList.add('status-AMBER');
             else statusBox.classList.add('status-GREEN');
-            statusBox.innerText = "상태: " + data.status;
+            
+            if (data.status === 'GREEN') statusBox.innerText = "상태: GREEN (정상 착륙)";
+            else statusBox.innerText = "상태: " + data.status;
 
             let maxNz = 0; let maxNy = 0;
-            // E1은 백엔드에서 제거됨. S3, T3 등에서 정확한 값을 그리기 위해 필터링
+            // S3, T3의 첫번째 값(VRTA)만 읽어서 맥스값 계산
             if (data.fleet_type === 'CEO' && data.trigger_code.startsWith('4')) {
                 let s3 = data.kpi_data['S3'] ? data.kpi_data['S3'].VRTA : 0;
                 let t3 = data.kpi_data['T3'] ? data.kpi_data['T3'].VRTA : 0;
@@ -295,27 +297,56 @@
             
             if (code.startsWith('4') && fleetType === 'CEO') {
                 const isOverweight = gw > mlw;
-                const nzAmberLimit = isOverweight ? 1.7 : 2.6;
-                const nzRedLimit = isOverweight ? 2.6 : 2.86;
-                const weightStatus = isOverweight ? `GW(${gw}) > MLW(${mlw})<br>Overweight` : `GW(${gw}) <= MLW(${mlw})<br>Normal Weight`;
                 
-                graphDefinition += `A[Load Report Code: ${code}] --> B{GW <= MLW?}\n`; 
-                graphDefinition += `B -- ${weightStatus} --> C{VRTA >= ${nzAmberLimit}g?}\n`; 
-                graphDefinition += `C -- Yes --> D{VRTA >= ${nzRedLimit}g?}\n`; 
-                graphDefinition += `C -- No --> E[GREEN ZONE<br>Normal Landing]\n`; 
-                graphDefinition += `D -- Yes --> F[RED ZONE<br>Severe Hard Landing]\n`; 
-                graphDefinition += `D -- No --> G[AMBER ZONE<br>Hard Landing]\n`; 
+                // 매뉴얼 사진과 동일한 구조 작성 (마름모 모양과 영문 그대로 적용)
+                graphDefinition += `
+                    A{"GW <= MLW"}
+                    B{"VRTA >= 2.6 g"}
+                    C{"VRTA >= 2.86 g"}
+                    D["NO MORE STEPS"]
+                    E["DO THE INSPECTION WITH THE STEPS FOR<br>A HARD LANDING"]
+                    F["DO THE INSPECTION WITH THE STEPS FOR<br>A SEVERE HARD LANDING"]
+                    G{"VRTA >= 1.7 g"}
+                    H{"VRTA >= 2.6 g"}
+                    I["NO MORE STEPS"]
+                    J["DO THE INSPECTION WITH THE STEPS<br>FOR A HARD OVERWEIGHT-LANDING"]
+                    K["DO THE INSPECTION WITH THE STEPS FOR<br>A SEVERE HARD OVERWEIGHT-LANDING"]
 
-                activeLinks.push(0, 1);
-                if (status.includes('GREEN')) {
-                    activeLinks.push(3);
-                    graphDefinition += `style E fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                } else if (status.includes('RED')) {
-                    activeLinks.push(2, 4);
-                    graphDefinition += `style F fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                    A -- YES --> B
+                    A -- NO --> G
+                    B -- NO --> D
+                    B -- YES --> C
+                    C -- NO --> E
+                    C -- YES --> F
+                    G -- NO --> I
+                    G -- YES --> H
+                    H -- NO --> J
+                    H -- YES --> K
+                `;
+                
+                // 경로에 따른 빨간 화살표 및 박스 색상 하이라이트
+                if (!isOverweight) {
+                    if (status.includes('GREEN')) {
+                        activeLinks.push(0, 2);
+                        graphDefinition += `style D fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                    } else if (status.includes('AMBER')) {
+                        activeLinks.push(0, 3, 4);
+                        graphDefinition += `style E fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
+                    } else if (status.includes('RED')) {
+                        activeLinks.push(0, 3, 5);
+                        graphDefinition += `style F fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                    }
                 } else {
-                    activeLinks.push(2, 5);
-                    graphDefinition += `style G fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
+                    if (status.includes('GREEN')) {
+                        activeLinks.push(1, 6);
+                        graphDefinition += `style I fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                    } else if (status.includes('AMBER')) {
+                        activeLinks.push(1, 7, 8);
+                        graphDefinition += `style J fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
+                    } else if (status.includes('RED')) {
+                        activeLinks.push(1, 7, 9);
+                        graphDefinition += `style K fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                    }
                 }
 
             } else if (code.startsWith('4') && fleetType === 'NEO') {
@@ -375,8 +406,9 @@
                 }
             }
             
+            // 지나온 길(Link)에 굵은 빨간색 화살표 그리기
             if (activeLinks.length > 0) {
-                graphDefinition += `linkStyle ${activeLinks.join(',')} stroke:red,stroke-width:4px,color:red;\n`;
+                graphDefinition += `linkStyle ${activeLinks.join(',')} stroke:red,stroke-width:5px,color:red;\n`;
             }
 
             const flowchartDiv = document.getElementById('flowchart');
