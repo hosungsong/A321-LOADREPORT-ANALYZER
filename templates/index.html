@@ -33,15 +33,15 @@
         .status-RED { background-color: #dc3545; }
         
         .info-panel { background: #f8f9fa; padding: 15px; border-left: 5px solid #0033a0; margin-bottom: 20px; font-size: 15px; line-height: 1.6; white-space: pre-line;}
-        .desc-text { color: #666; font-size: 0.9em; display: block; margin-top: 2px; }
-        .chart-container { position: relative; height: 500px; width: 100%; margin-bottom: 30px; }
+        .chart-container { position: relative; height: 450px; width: 100%; margin-bottom: 30px; }
         
-        /* 매뉴얼 원본 SVG 스타일 */
-        .svg-flowchart-container { text-align: center; margin-top: 20px; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 8px; overflow-x: auto; display: none;}
-        svg text { font-family: Arial, sans-serif; font-size: 11px; pointer-events: none; }
-        svg .box { fill: #ffffe0; stroke: #333; stroke-width: 1.5; } /* 에어버스 매뉴얼 특유의 연노랑 박스 */
+        /* 매뉴얼 SVG 다이어그램 스타일 */
+        .svg-flowchart-container { text-align: center; margin-top: 20px; background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 8px; overflow-x: auto; display: none;}
+        svg { max-width: 100%; height: auto; }
+        svg text { font-family: Arial, sans-serif; font-size: 12px; pointer-events: none; }
+        svg .box { fill: #ffffe0; stroke: #333; stroke-width: 1.5; }
         svg .path { fill: none; stroke: #888; stroke-width: 2; }
-        svg .path.active { stroke: red; stroke-width: 4; }
+        svg .path.active { stroke: red; stroke-width: 5; } /* 강조된 화살표 */
         svg .box.active-green { fill: #28a745; stroke: #000; stroke-width: 2; }
         svg .box.active-amber { fill: #ffc107; stroke: #000; stroke-width: 2; }
         svg .box.active-red { fill: #dc3545; stroke: #000; stroke-width: 2; }
@@ -72,190 +72,182 @@
             
             <div class="info-panel">
                 <p><strong>✈️ 대상 기종:</strong> <span id="fleetType"></span> (<span id="acId"></span>)</p>
-                <p>
-                    <strong>🚨 Trigger Code:</strong> <span id="triggerCode" style="font-weight:bold; color:#dc3545;"></span>
-                    <span id="triggerDesc" class="desc-text"></span>
-                </p>
+                <p><strong>🚨 Trigger Code:</strong> <span id="triggerCode" style="font-weight:bold; color:#dc3545;"></span></p>
                 <p><strong>📝 판별 사유:</strong><br><span id="reasonText" style="font-weight:bold; color:#0033a0;"></span></p>
             </div>
 
+            <!-- 차트 영역 -->
             <h3 style="color: #0033a0; text-align: center;" id="chartTitle">📊 분석 그래프</h3>
             <div class="chart-container">
                 <canvas id="limitChart"></canvas>
             </div>
 
-            <h3 style="color: #0033a0; text-align: center;">🔀 Decision Flow Chart (AMM 기준)</h3>
+            <h3 style="color: #0033a0; text-align: center;">🔀 Decision Flow Chart (매뉴얼 기준)</h3>
             
-            <!-- 1. CEO 4XXX 매뉴얼 Flowchart -->
             <div id="ceoFlowchartArea" class="svg-flowchart-container">
-                <svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                <svg width="850" height="450" viewBox="0 0 850 450" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <marker id="arrow-gray" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#888" /></marker>
                         <marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="red" /></marker>
                     </defs>
-                    <!-- Nodes -->
-                    <polygon id="ceo-gw" class="box" points="400,20 480,60 400,100 320,60" />
-                    <text x="400" y="64" text-anchor="middle" class="text-black">GW &le; MLW</text>
                     
-                    <polygon id="ceo-v26" class="box" points="250,140 330,180 250,220 170,180" />
-                    <text x="250" y="184" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
+                    <!-- 노드 -->
+                    <polygon id="ceo-gw" class="box" points="425,20 525,70 425,120 325,70" />
+                    <text x="425" y="75" text-anchor="middle" class="text-black">GW &le; MLW</text>
                     
-                    <polygon id="ceo-v17" class="box" points="600,140 680,180 600,220 520,180" />
-                    <text x="600" y="184" text-anchor="middle" class="text-black">VRTA &ge; 1.7 g</text>
-
-                    <polygon id="ceo-v286" class="box" points="150,250 210,290 150,330 90,290" />
-                    <text x="150" y="294" text-anchor="middle" class="text-black">VRTA &ge; 2.86 g</text>
-
-                    <polygon id="ceo-v26ow" class="box" points="500,250 560,290 500,330 440,290" />
-                    <text x="500" y="294" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
-
-                    <!-- End Boxes -->
-                    <rect id="ceo-nms1" class="box" x="300" y="220" width="120" height="40" />
-                    <text x="360" y="244" text-anchor="middle" class="text-black" id="ceo-nms1-txt">NO MORE STEPS</text>
+                    <polygon id="ceo-v26" class="box" points="250,170 350,220 250,270 150,220" />
+                    <text x="250" y="225" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
                     
-                    <rect id="ceo-nms2" class="box" x="650" y="220" width="120" height="40" />
-                    <text x="710" y="244" text-anchor="middle" class="text-black" id="ceo-nms2-txt">NO MORE STEPS</text>
+                    <polygon id="ceo-v17" class="box" points="600,170 700,220 600,270 500,220" />
+                    <text x="600" y="225" text-anchor="middle" class="text-black">VRTA &ge; 1.7 g</text>
 
-                    <rect id="ceo-shl" class="box" x="10" y="350" width="120" height="40" />
-                    <text x="70" y="365" text-anchor="middle" class="text-black" id="ceo-shl-txt"><tspan x="70" dy="0">SEVERE</tspan><tspan x="70" dy="12">HARD LANDING</tspan></text>
+                    <polygon id="ceo-v286" class="box" points="150,300 230,340 150,380 70,340" />
+                    <text x="150" y="345" text-anchor="middle" class="text-black">VRTA &ge; 2.86 g</text>
 
-                    <rect id="ceo-hl" class="box" x="140" y="350" width="120" height="40" />
-                    <text x="200" y="374" text-anchor="middle" class="text-black" id="ceo-hl-txt">HARD LANDING</text>
+                    <polygon id="ceo-v26ow" class="box" points="500,300 580,340 500,380 420,340" />
+                    <text x="500" y="345" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
 
-                    <rect id="ceo-shol" class="box" x="360" y="350" width="130" height="40" />
-                    <text x="425" y="365" text-anchor="middle" class="text-black" id="ceo-shol-txt"><tspan x="425" dy="0">SEVERE HARD</tspan><tspan x="425" dy="12">OVERWEIGHT</tspan></text>
+                    <!-- 최종 결과 박스 -->
+                    <rect id="ceo-nms1" class="box" x="290" y="320" width="130" height="40" />
+                    <text x="355" y="345" text-anchor="middle" class="text-black" id="ceo-nms1-txt">NO MORE STEPS</text>
+                    
+                    <rect id="ceo-nms2" class="box" x="650" y="320" width="130" height="40" />
+                    <text x="715" y="345" text-anchor="middle" class="text-black" id="ceo-nms2-txt">NO MORE STEPS</text>
 
-                    <rect id="ceo-hol" class="box" x="500" y="350" width="130" height="40" />
-                    <text x="565" y="365" text-anchor="middle" class="text-black" id="ceo-hol-txt"><tspan x="565" dy="0">HARD</tspan><tspan x="565" dy="12">OVERWEIGHT</tspan></text>
+                    <rect id="ceo-shl" class="box" x="10" y="400" width="130" height="40" />
+                    <text x="75" y="415" text-anchor="middle" class="text-black" id="ceo-shl-txt"><tspan x="75" dy="0">SEVERE</tspan><tspan x="75" dy="14">HARD LANDING</tspan></text>
 
-                    <!-- Paths -->
-                    <path id="ceo-p1" class="path" d="M 320 60 L 250 60 L 250 140" marker-end="url(#arrow-gray)" />
-                    <text x="285" y="55" class="text-black">YES</text>
-                    <path id="ceo-p2" class="path" d="M 480 60 L 600 60 L 600 140" marker-end="url(#arrow-gray)" />
-                    <text x="540" y="55" class="text-black">NO</text>
+                    <rect id="ceo-hl" class="box" x="150" y="400" width="130" height="40" />
+                    <text x="215" y="425" text-anchor="middle" class="text-black" id="ceo-hl-txt">HARD LANDING</text>
 
-                    <path id="ceo-p3" class="path" d="M 170 180 L 150 180 L 150 250" marker-end="url(#arrow-gray)" />
-                    <text x="160" y="175" class="text-black">YES</text>
-                    <path id="ceo-p4" class="path" d="M 330 180 L 360 180 L 360 220" marker-end="url(#arrow-gray)" />
-                    <text x="345" y="175" class="text-black">NO</text>
+                    <rect id="ceo-shol" class="box" x="360" y="400" width="140" height="40" />
+                    <text x="430" y="415" text-anchor="middle" class="text-black" id="ceo-shol-txt"><tspan x="430" dy="0">SEVERE HARD</tspan><tspan x="430" dy="14">OVERWEIGHT</tspan></text>
 
-                    <path id="ceo-p5" class="path" d="M 520 180 L 500 180 L 500 250" marker-end="url(#arrow-gray)" />
-                    <text x="510" y="175" class="text-black">YES</text>
-                    <path id="ceo-p6" class="path" d="M 680 180 L 710 180 L 710 220" marker-end="url(#arrow-gray)" />
-                    <text x="695" y="175" class="text-black">NO</text>
+                    <rect id="ceo-hol" class="box" x="510" y="400" width="140" height="40" />
+                    <text x="580" y="415" text-anchor="middle" class="text-black" id="ceo-hol-txt"><tspan x="580" dy="0">HARD</tspan><tspan x="580" dy="14">OVERWEIGHT</tspan></text>
 
-                    <path id="ceo-p7" class="path" d="M 90 290 L 70 290 L 70 350" marker-end="url(#arrow-gray)" />
-                    <text x="80" y="285" class="text-black">YES</text>
-                    <path id="ceo-p8" class="path" d="M 210 290 L 200 290 L 200 350" marker-end="url(#arrow-gray)" />
-                    <text x="205" y="285" class="text-black">NO</text>
+                    <!-- 직각 화살표 라인 (d="M ... L ... L ...") -->
+                    <path id="ceo-p1" class="path" d="M 325 70 L 250 70 L 250 170" marker-end="url(#arrow-gray)" />
+                    <text x="290" y="60" class="text-black">YES</text>
+                    <path id="ceo-p2" class="path" d="M 525 70 L 600 70 L 600 170" marker-end="url(#arrow-gray)" />
+                    <text x="560" y="60" class="text-black">NO</text>
 
-                    <path id="ceo-p9" class="path" d="M 440 290 L 425 290 L 425 350" marker-end="url(#arrow-gray)" />
-                    <text x="432" y="285" class="text-black">YES</text>
-                    <path id="ceo-p10" class="path" d="M 560 290 L 565 290 L 565 350" marker-end="url(#arrow-gray)" />
-                    <text x="562" y="285" class="text-black">NO</text>
+                    <path id="ceo-p3" class="path" d="M 150 220 L 150 300" marker-end="url(#arrow-gray)" />
+                    <text x="130" y="260" class="text-black">YES</text>
+                    <path id="ceo-p4" class="path" d="M 350 220 L 355 220 L 355 320" marker-end="url(#arrow-gray)" />
+                    <text x="365" y="215" class="text-black">NO</text>
+
+                    <path id="ceo-p5" class="path" d="M 500 220 L 500 300" marker-end="url(#arrow-gray)" />
+                    <text x="480" y="260" class="text-black">YES</text>
+                    <path id="ceo-p6" class="path" d="M 700 220 L 715 220 L 715 320" marker-end="url(#arrow-gray)" />
+                    <text x="725" y="215" class="text-black">NO</text>
+
+                    <path id="ceo-p7" class="path" d="M 70 340 L 75 340 L 75 400" marker-end="url(#arrow-gray)" />
+                    <text x="60" y="330" class="text-black">YES</text>
+                    <path id="ceo-p8" class="path" d="M 230 340 L 215 340 L 215 400" marker-end="url(#arrow-gray)" />
+                    <text x="240" y="330" class="text-black">NO</text>
+
+                    <path id="ceo-p9" class="path" d="M 420 340 L 430 340 L 430 400" marker-end="url(#arrow-gray)" />
+                    <text x="410" y="330" class="text-black">YES</text>
+                    <path id="ceo-p10" class="path" d="M 580 340 L 580 400" marker-end="url(#arrow-gray)" />
+                    <text x="590" y="330" class="text-black">NO</text>
                 </svg>
             </div>
 
-            <!-- 2. NEO 4XXX 매뉴얼 Flowchart -->
             <div id="neoFlowchartArea" class="svg-flowchart-container">
-                <svg width="700" height="300" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
+                <svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <marker id="arrow-gray-neo" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#888" /></marker>
                         <marker id="arrow-red-neo" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="red" /></marker>
                     </defs>
-                    <rect class="box" x="250" y="10" width="200" height="40" rx="10" />
-                    <text x="350" y="34" text-anchor="middle" class="text-black">NEO LOAD REPORT (4XXX)</text>
-                    <path id="neo-p-start" class="path" d="M 350 50 L 350 80" marker-end="url(#arrow-gray-neo)" />
+                    
+                    <polygon id="neo-d1" class="box" points="300,20 420,80 300,140 180,80" />
+                    <text x="300" y="75" text-anchor="middle" class="text-black">Nz &ge; 2.06 g or</text>
+                    <text x="300" y="95" text-anchor="middle" class="text-black">Ny &ge; 0.5 g</text>
 
-                    <polygon id="neo-d1" class="box" points="350,80 450,120 350,160 250,120" />
-                    <text x="350" y="115" text-anchor="middle" class="text-black">Nz &ge; 2.06 g or</text>
-                    <text x="350" y="130" text-anchor="middle" class="text-black">Ny &ge; 0.5 g</text>
+                    <polygon id="neo-d2" class="box" points="300,180 420,240 300,300 180,240" />
+                    <text x="300" y="235" text-anchor="middle" class="text-black">Nz &ge; 1.80 g or</text>
+                    <text x="300" y="255" text-anchor="middle" class="text-black">Ny &ge; 0.45 g</text>
 
-                    <path id="neo-p-d1y" class="path" d="M 250 120 L 150 120 L 150 180" marker-end="url(#arrow-gray-neo)" />
-                    <text x="200" y="115" class="text-black">YES</text>
-                    <rect id="neo-red" class="box" x="50" y="180" width="200" height="50" />
-                    <text x="150" y="205" text-anchor="middle" class="text-black" id="neo-red-txt"><tspan x="150" dy="0">SEVERE HARD LANDING</tspan><tspan x="150" dy="14">(RED ZONE)</tspan></text>
+                    <rect id="neo-red" class="box" x="10" y="120" width="140" height="40" />
+                    <text x="80" y="135" text-anchor="middle" class="text-black" id="neo-red-txt"><tspan x="80" dy="0">SEVERE</tspan><tspan x="80" dy="14">HARD LANDING</tspan></text>
 
-                    <path id="neo-p-d1n" class="path" d="M 450 120 L 550 120 L 550 150" marker-end="url(#arrow-gray-neo)" />
-                    <text x="500" y="115" class="text-black">NO</text>
+                    <rect id="neo-amber" class="box" x="10" y="280" width="140" height="40" />
+                    <text x="80" y="305" text-anchor="middle" class="text-black" id="neo-amber-txt">HARD LANDING</text>
+                    
+                    <rect id="neo-green" class="box" x="450" y="280" width="140" height="40" />
+                    <text x="520" y="305" text-anchor="middle" class="text-black" id="neo-green-txt">NO MORE STEPS</text>
 
-                    <polygon id="neo-d2" class="box" points="550,150 630,190 550,230 470,190" />
-                    <text x="550" y="185" text-anchor="middle" class="text-black">Nz &ge; 1.80 or</text>
-                    <text x="550" y="200" text-anchor="middle" class="text-black">Ny &ge; 0.45</text>
-
-                    <path id="neo-p-d2y" class="path" d="M 470 190 L 370 190 L 370 230" marker-end="url(#arrow-gray-neo)" />
-                    <text x="420" y="185" class="text-black">YES</text>
-                    <rect id="neo-amber" class="box" x="270" y="230" width="200" height="50" />
-                    <text x="370" y="255" text-anchor="middle" class="text-black" id="neo-amber-txt"><tspan x="370" dy="0">HARD LANDING</tspan><tspan x="370" dy="14">(AMBER ZONE)</tspan></text>
-
-                    <path id="neo-p-d2n" class="path" d="M 630 190 L 650 190 L 650 230" marker-end="url(#arrow-gray-neo)" />
-                    <text x="640" y="185" class="text-black">NO</text>
-                    <rect id="neo-green" class="box" x="550" y="230" width="140" height="50" />
-                    <text x="620" y="255" text-anchor="middle" class="text-black" id="neo-green-txt"><tspan x="620" dy="0">NO MORE STEPS</tspan><tspan x="620" dy="14">(GREEN ZONE)</tspan></text>
+                    <path id="neo-p1" class="path" d="M 180 80 L 80 80 L 80 120" marker-end="url(#arrow-gray-neo)" />
+                    <text x="130" y="70" class="text-black">YES</text>
+                    
+                    <path id="neo-p2" class="path" d="M 300 140 L 300 180" marker-end="url(#arrow-gray-neo)" />
+                    <text x="315" y="165" class="text-black">NO</text>
+                    
+                    <path id="neo-p3" class="path" d="M 180 240 L 80 240 L 80 280" marker-end="url(#arrow-gray-neo)" />
+                    <text x="130" y="230" class="text-black">YES</text>
+                    
+                    <path id="neo-p4" class="path" d="M 420 240 L 520 240 L 520 280" marker-end="url(#arrow-gray-neo)" />
+                    <text x="470" y="230" class="text-black">NO</text>
                 </svg>
             </div>
 
-            <!-- 3. 난기류(5XXX) 매뉴얼 Flowchart -->
             <div id="turbFlowchartArea" class="svg-flowchart-container">
                 <svg width="600" height="250" viewBox="0 0 600 250" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <marker id="arrow-gray-turb" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#888" /></marker>
                         <marker id="arrow-red-turb" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="red" /></marker>
                     </defs>
-                    <rect class="box" x="200" y="10" width="200" height="40" rx="10" />
-                    <text x="300" y="34" text-anchor="middle" class="text-black">IN-FLIGHT TURBULENCE</text>
-                    <path id="turb-p-start" class="path" d="M 300 50 L 300 80" marker-end="url(#arrow-gray-turb)" />
+                    <polygon id="turb-d1" class="box" points="300,20 420,70 300,120 180,70" />
+                    <text x="300" y="65" text-anchor="middle" class="text-black">VRTA LIMIT</text>
+                    <text x="300" y="85" text-anchor="middle" class="text-black">EXCEEDED?</text>
 
-                    <polygon id="turb-d1" class="box" points="300,80 430,120 300,160 170,120" />
-                    <text x="300" y="115" text-anchor="middle" class="text-black" id="turb-limit-txt1">VRTA LIMIT</text>
-                    <text x="300" y="135" text-anchor="middle" class="text-black" id="turb-limit-txt2">EXCEEDED?</text>
+                    <rect id="turb-red" class="box" x="50" y="150" width="200" height="40" />
+                    <text x="150" y="175" text-anchor="middle" class="text-black" id="turb-red-txt">INSPECTION REQUIRED</text>
 
-                    <path id="turb-p-y" class="path" d="M 170 120 L 120 120 L 120 180" marker-end="url(#arrow-gray-turb)" />
-                    <text x="145" y="115" class="text-black">YES</text>
-                    <rect id="turb-red" class="box" x="20" y="180" width="200" height="50" />
-                    <text x="120" y="205" text-anchor="middle" class="text-black" id="turb-red-txt"><tspan x="120" dy="0">INSPECTION REQUIRED</tspan><tspan x="120" dy="14">(RED ZONE)</tspan></text>
+                    <rect id="turb-green" class="box" x="350" y="150" width="200" height="40" />
+                    <text x="450" y="175" text-anchor="middle" class="text-black" id="turb-green-txt">NO MORE STEPS</text>
 
-                    <path id="turb-p-n" class="path" d="M 430 120 L 480 120 L 480 180" marker-end="url(#arrow-gray-turb)" />
-                    <text x="455" y="115" class="text-black">NO</text>
-                    <rect id="turb-green" class="box" x="380" y="180" width="200" height="50" />
-                    <text x="480" y="205" text-anchor="middle" class="text-black" id="turb-green-txt"><tspan x="480" dy="0">NO INSPECTION REQUIRED</tspan><tspan x="480" dy="14">(GREEN ZONE)</tspan></text>
+                    <path id="turb-p1" class="path" d="M 180 70 L 150 70 L 150 150" marker-end="url(#arrow-gray-turb)" />
+                    <text x="160" y="60" class="text-black">YES</text>
+                    
+                    <path id="turb-p2" class="path" d="M 420 70 L 450 70 L 450 150" marker-end="url(#arrow-gray-turb)" />
+                    <text x="430" y="60" class="text-black">NO</text>
                 </svg>
             </div>
 
-            <!-- 4. 측면 가속도(5600/5700) 매뉴얼 Flowchart -->
             <div id="latFlowchartArea" class="svg-flowchart-container">
-                <svg width="700" height="300" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
+                <svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <marker id="arrow-gray-lat" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#888" /></marker>
                         <marker id="arrow-red-lat" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="red" /></marker>
                     </defs>
-                    <rect class="box" x="250" y="10" width="200" height="40" rx="10" />
-                    <text x="350" y="34" text-anchor="middle" class="text-black">HIGH LATERAL ACCEL (56/57)</text>
-                    <path id="lat-p-start" class="path" d="M 350 50 L 350 80" marker-end="url(#arrow-gray-lat)" />
+                    <polygon id="lat-d1" class="box" points="300,20 420,80 300,140 180,80" />
+                    <text x="300" y="85" text-anchor="middle" class="text-black">LATA > 0.41 g</text>
 
-                    <polygon id="lat-d1" class="box" points="350,80 430,120 350,160 270,120" />
-                    <text x="350" y="124" text-anchor="middle" class="text-black">LATA > 0.41 g</text>
+                    <polygon id="lat-d2" class="box" points="300,180 420,240 300,300 180,240" />
+                    <text x="300" y="245" text-anchor="middle" class="text-black">LATA &ge; 0.35 g</text>
 
-                    <path id="lat-p-d1y" class="path" d="M 270 120 L 150 120 L 150 180" marker-end="url(#arrow-gray-lat)" />
-                    <text x="210" y="115" class="text-black">YES</text>
-                    <rect id="lat-red" class="box" x="50" y="180" width="200" height="50" />
-                    <text x="150" y="205" text-anchor="middle" class="text-black" id="lat-red-txt"><tspan x="150" dy="0">SEVERE HIGH LATERAL</tspan><tspan x="150" dy="14">(RED ZONE)</tspan></text>
+                    <rect id="lat-red" class="box" x="10" y="120" width="140" height="40" />
+                    <text x="80" y="135" text-anchor="middle" class="text-black" id="lat-red-txt"><tspan x="80" dy="0">SEVERE HIGH</tspan><tspan x="80" dy="14">LATERAL</tspan></text>
 
-                    <path id="lat-p-d1n" class="path" d="M 430 120 L 550 120 L 550 150" marker-end="url(#arrow-gray-lat)" />
-                    <text x="490" y="115" class="text-black">NO</text>
+                    <rect id="lat-amber" class="box" x="10" y="280" width="140" height="40" />
+                    <text x="80" y="305" text-anchor="middle" class="text-black" id="lat-amber-txt">HIGH LATERAL</text>
+                    
+                    <rect id="lat-green" class="box" x="450" y="280" width="140" height="40" />
+                    <text x="520" y="305" text-anchor="middle" class="text-black" id="lat-green-txt">NO MORE STEPS</text>
 
-                    <polygon id="lat-d2" class="box" points="550,150 630,190 550,230 470,190" />
-                    <text x="550" y="194" text-anchor="middle" class="text-black">LATA &ge; 0.35 g</text>
-
-                    <path id="lat-p-d2y" class="path" d="M 470 190 L 370 190 L 370 230" marker-end="url(#arrow-gray-lat)" />
-                    <text x="420" y="185" class="text-black">YES</text>
-                    <rect id="lat-amber" class="box" x="270" y="230" width="200" height="50" />
-                    <text x="370" y="255" text-anchor="middle" class="text-black" id="lat-amber-txt"><tspan x="370" dy="0">HIGH LATERAL</tspan><tspan x="370" dy="14">(AMBER ZONE)</tspan></text>
-
-                    <path id="lat-p-d2n" class="path" d="M 630 190 L 650 190 L 650 230" marker-end="url(#arrow-gray-lat)" />
-                    <text x="640" y="185" class="text-black">NO</text>
-                    <rect id="lat-green" class="box" x="550" y="230" width="140" height="50" />
-                    <text x="620" y="255" text-anchor="middle" class="text-black" id="lat-green-txt"><tspan x="620" dy="0">NO MORE STEPS</tspan><tspan x="620" dy="14">(GREEN ZONE)</tspan></text>
+                    <path id="lat-p1" class="path" d="M 180 80 L 80 80 L 80 120" marker-end="url(#arrow-gray-lat)" />
+                    <text x="130" y="70" class="text-black">YES</text>
+                    
+                    <path id="lat-p2" class="path" d="M 300 140 L 300 180" marker-end="url(#arrow-gray-lat)" />
+                    <text x="315" y="165" class="text-black">NO</text>
+                    
+                    <path id="lat-p3" class="path" d="M 180 240 L 80 240 L 80 280" marker-end="url(#arrow-gray-lat)" />
+                    <text x="130" y="230" class="text-black">YES</text>
+                    
+                    <path id="lat-p4" class="path" d="M 420 240 L 520 240 L 520 280" marker-end="url(#arrow-gray-lat)" />
+                    <text x="470" y="230" class="text-black">NO</text>
                 </svg>
             </div>
 
@@ -266,7 +258,7 @@
         let currentChart = null; 
         let pastedImageFile = null;
 
-        // 그래프 렌더링 최하단(마지막)에 점을 강제로 박아버리는 강력한 플러그인 (글자 + 노란색 점)
+        // 절대 가려지지 않는 강력한 노란색 점(Point) 및 글씨 플러그인
         const alwaysShowTooltipPlugin = {
             id: 'alwaysShowTooltip',
             afterDraw(chart, args, options) {
@@ -276,32 +268,33 @@
                         const { x, y } = datapoint.tooltipPosition();
                         
                         ctx.save();
-                        // 1. 점(Point) 강제 그리기 (무조건 최상단에 노출되도록)
+                        // 1. 노란색 점 강제 출력
                         ctx.beginPath();
-                        ctx.arc(x, y, 9, 0, 2 * Math.PI); 
+                        ctx.arc(x, y, 8, 0, 2 * Math.PI); 
                         ctx.fillStyle = '#FFFF00'; // 선명한 노란색
                         ctx.fill();
                         ctx.lineWidth = 3;
                         ctx.strokeStyle = '#000000'; // 검정 테두리
                         ctx.stroke();
 
-                        // 2. 글씨(Label) 그리기
-                        const customLabel = dataset.customLabel || `Value: ${dataset.data[index].y}`;
-                        ctx.font = 'bold 15px Arial';
-                        ctx.textAlign = 'center';
-                        // 글씨 테두리 (어떤 배경에서도 잘 보이게 하얀색 두껍게)
-                        ctx.strokeStyle = 'white';
-                        ctx.lineWidth = 5;
-                        ctx.strokeText(customLabel, x, y - 18);
-                        // 글씨 채우기 (검은색)
-                        ctx.fillStyle = 'black';
-                        ctx.fillText(customLabel, x, y - 18);
+                        // 2. 글씨(Label) 출력 (가독성 향상을 위해 하얀색 두꺼운 테두리 적용)
+                        const customLabel = dataset.customLabel || '';
+                        if(customLabel) {
+                            ctx.font = 'bold 14px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.strokeStyle = 'white';
+                            ctx.lineWidth = 4;
+                            ctx.strokeText(customLabel, x, y - 15);
+                            ctx.fillStyle = 'black';
+                            ctx.fillText(customLabel, x, y - 15);
+                        }
                         ctx.restore();
                     });
                 });
             }
         };
 
+        // 이미지 붙여넣기 이벤트 리스너
         document.addEventListener('paste', function(e) {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
             for (let index in items) {
@@ -369,7 +362,6 @@
             document.getElementById('fleetType').innerText = data.fleet_type;
             document.getElementById('acId').innerText = data.aircraft_id;
             document.getElementById('triggerCode').innerText = data.trigger_code;
-            document.getElementById('triggerDesc').innerText = "- " + data.trigger_desc;
             document.getElementById('reasonText').innerText = data.reason;
 
             const statusBox = document.getElementById('statusBox');
@@ -379,42 +371,44 @@
             else statusBox.classList.add('status-GREEN');
             statusBox.innerText = data.status + " ZONE";
 
-            let maxNz = 0, maxNy = 0, s3_vrta = 0, t3_vrta = 0;
-            if (data.fleet_type === 'CEO' && data.trigger_code.startsWith('4')) {
-                s3_vrta = data.kpi_data['S3'] ? data.kpi_data['S3'].VRTA : 0;
-                t3_vrta = data.kpi_data['T3'] ? data.kpi_data['T3'].VRTA : 0;
-                maxNz = Math.max(s3_vrta, t3_vrta);
-            } else {
+            // KPI 데이터 추출
+            let maxNz = 0, maxNy = 0, maxLata = 0;
+            if (data.kpi_data) {
                 for (const key in data.kpi_data) {
                     let item = data.kpi_data[key];
                     if (item.Nz_kpi !== undefined) maxNz = Math.max(maxNz, item.Nz_kpi);
                     if (item.Ny_kpi !== undefined) maxNy = Math.max(maxNy, item.Ny_kpi);
                     if (item.VRTA !== undefined) maxNz = Math.max(maxNz, item.VRTA);
-                    if (item.LATA !== undefined) maxNy = Math.max(maxNy, item.LATA);
+                    if (item.LATA !== undefined) maxLata = Math.max(maxLata, item.LATA);
                 }
             }
             
-            drawChart(maxNy, maxNz, data.fleet_type, data.trigger_code, data.gw_lbs, data.mlw_lbs);
-            drawFlowchart(data.trigger_code, data.status, data.fleet_type, data.gw_lbs, data.mlw_lbs, maxNz, maxNy);
+            drawChart(data, maxNy, maxNz, maxLata);
+            drawFlowchart(data, maxNz, maxNy, maxLata);
             document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function drawChart(ny, nz, fleetType, code, gw, mlw) {
+        function drawChart(data, ny, nz, lata) {
             const ctx = document.getElementById('limitChart').getContext('2d');
             if (currentChart) currentChart.destroy(); 
+            
             let chartData, chartOptions, pointLabel = "";
+            let code = data.trigger_code;
+            let fleet = data.fleet_type;
+            let gw = data.gw_lbs;
+            let mlw = data.mlw_lbs;
 
-            if (fleetType === 'CEO' && code.startsWith('4')) {
+            if (fleet === 'CEO' && code.startsWith('4')) {
                 document.getElementById('chartTitle').innerText = '📊 CEO Hard Landing Limit (Weight vs VRTA)';
                 pointLabel = `GW: ${gw.toLocaleString()} / VRTA: ${nz}g`;
                 
-                chartData = { datasets: [{ label: 'Data', data: [{x: gw > 0 ? gw : 150000, y: nz}], customLabel: pointLabel }] };
+                chartData = { datasets: [{ data: [{x: gw > 0 ? gw : 150000, y: nz}], customLabel: pointLabel, pointRadius: 0 }] };
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
-                        legend: { display: false }, tooltip: { enabled: false }, // 범례와 기본 툴팁 완전 제거
+                        legend: { display: false }, tooltip: { enabled: false },
                         annotation: { 
-                            drawTime: 'beforeDatasetsDraw',
+                            drawTime: 'beforeDatasetsDraw', // 박스를 무조건 먼저 그림
                             annotations: { 
                                 boxLeftRed: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.86, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
                                 boxLeftAmber: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.6, yMax: 2.86, backgroundColor: 'rgba(255, 153, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
@@ -422,7 +416,7 @@
                                 boxRightRed: { type: 'box', xMin: mlw, xMax: 220000, yMin: 2.6, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
                                 boxRightAmber: { type: 'box', xMin: mlw, xMax: 220000, yMin: 1.7, yMax: 2.6, backgroundColor: 'rgba(255, 153, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
                                 boxRightGreen: { type: 'box', xMin: mlw, xMax: 220000, yMin: 0, yMax: 1.7, backgroundColor: 'rgba(0, 255, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
-                                lineMlw: { type: 'line', xMin: mlw, xMax: mlw, yMin: 0, yMax: 4.0, borderColor: 'black', borderWidth: 2, label: { content: 'MLW', display: true, position: 'end', yAdjust: 15, backgroundColor: 'black', color: 'white' } }
+                                lineMlw: { type: 'line', xMin: mlw, xMax: mlw, yMin: 0, yMax: 4.0, borderColor: 'black', borderWidth: 2, label: { content: 'MLW', display: true, position: 'start', backgroundColor: 'black', color: 'white' } }
                             } 
                         } 
                     },
@@ -434,18 +428,18 @@
             } else {
                 let yMax = 3.5, xMax = 0.6, titleY = '수직 가속도', titleX = '측면 가속도', rBox, aBox, gBox;
 
-                if (fleetType === 'NEO' && code.startsWith('4')) {
+                if (fleet === 'NEO' && code.startsWith('4')) {
                     document.getElementById('chartTitle').innerText = '📊 NEO Hard Landing Limit (Nz, Ny)';
                     pointLabel = `Nz: ${nz}g / Ny: ${ny}g`;
                     titleY = 'Nz (수직) g'; titleX = 'Ny (측면) g'; yMax = 2.5; xMax = 0.6;
-                    rBox = { type: 'box', xMin: 0, xMax: 1.0, yMin: 0, yMax: yMax, backgroundColor: 'rgba(220, 53, 69, 0.4)', borderWidth: 0 };
+                    rBox = { type: 'box', xMin: 0, xMax: 1.0, yMin: 0, yMax: yMax, backgroundColor: 'rgba(220, 53, 69, 0.5)', borderWidth: 0 };
                     aBox = { type: 'box', xMin: 0, xMax: 0.5, yMin: 0, yMax: 2.06, backgroundColor: 'rgba(255, 193, 7, 1.0)', borderWidth: 0 };
                     gBox = { type: 'box', xMin: 0, xMax: 0.45, yMin: 0, yMax: 1.80, backgroundColor: 'rgba(40, 167, 69, 1.0)', borderWidth: 0 };
                 } else if (code.startsWith('5')) {
                     if (code === '5600' || code === '5700') {
                         document.getElementById('chartTitle').innerText = '📊 High Lateral Limit';
-                        pointLabel = `LATA: ${maxNy}g`;
-                        titleY = 'LATA (측면 가속도) g'; titleX = 'Index'; xMax = 1.0; yMax = 0.6; nz = ny; 
+                        pointLabel = `LATA: ${lata}g`;
+                        titleY = 'LATA (측면 가속도) g'; titleX = 'Index'; xMax = 1.0; yMax = 0.6; nz = lata; ny = 0.5;
                         rBox = { type: 'box', xMin: 0, xMax: 1.0, yMin: 0.41, yMax: 0.6, backgroundColor: 'rgba(220, 53, 69, 0.4)', borderWidth: 0 };
                         aBox = { type: 'box', xMin: 0, xMax: 1.0, yMin: 0.35, yMax: 0.41, backgroundColor: 'rgba(255, 193, 7, 0.4)', borderWidth: 0 };
                         gBox = { type: 'box', xMin: 0, xMax: 1.0, yMin: 0, yMax: 0.35, backgroundColor: 'rgba(40, 167, 69, 0.4)', borderWidth: 0 };
@@ -459,28 +453,39 @@
                     }
                 }
 
-                chartData = { datasets: [{ label: 'Data', data: [{x: ny, y: nz}], customLabel: pointLabel }] };
+                chartData = { datasets: [{ data: [{x: ny, y: nz}], customLabel: pointLabel, pointRadius: 0 }] };
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false }, annotation: { drawTime: 'beforeDatasetsDraw', annotations: { boxRed: rBox, boxAmber: aBox, boxGreen: gBox } } },
-                    scales: { x: { type: 'linear', position: 'bottom', title: {display: true, text: titleX, font: {weight: 'bold'}}, min: 0, max: xMax }, y: { title: {display: true, text: titleY, font: {weight: 'bold'}}, min: (code.startsWith('5') && code !== '5600' && code !== '5700') ? -1.5 : 0, max: yMax } }
+                    plugins: { 
+                        legend: { display: false }, tooltip: { enabled: false }, 
+                        annotation: { drawTime: 'beforeDatasetsDraw', annotations: { boxRed: rBox, boxAmber: aBox, boxGreen: gBox } } 
+                    },
+                    scales: { 
+                        x: { type: 'linear', position: 'bottom', title: {display: true, text: titleX, font: {weight: 'bold'}}, min: 0, max: xMax }, 
+                        y: { title: {display: true, text: titleY, font: {weight: 'bold'}}, min: (code.startsWith('5') && code !== '5600' && code !== '5700') ? -1.5 : 0, max: yMax } 
+                    }
                 };
             }
             currentChart = new Chart(ctx, { type: 'scatter', data: chartData, options: chartOptions, plugins: [alwaysShowTooltipPlugin] });
         }
 
-        // 모든 플로우차트를 제어하고 빨간펜을 그어주는 함수
-        function drawFlowchart(code, status, fleetType, gw, mlw, vrta, ny) {
+        function drawFlowchart(data, vrta, ny, lata) {
+            // 모든 영역 숨기기 및 초기화
             document.querySelectorAll('.svg-flowchart-container').forEach(el => el.style.display = 'none');
-            
-            // 모든 속성 초기화
-            document.querySelectorAll('.path').forEach(el => { el.classList.remove('active'); el.setAttribute('marker-end', el.id.includes('neo') ? 'url(#arrow-gray-neo)' : (el.id.includes('turb') ? 'url(#arrow-gray-turb)' : (el.id.includes('lat') ? 'url(#arrow-gray-lat)' : 'url(#arrow-gray)'))); });
+            document.querySelectorAll('.path').forEach(el => { el.classList.remove('active'); });
             document.querySelectorAll('.box').forEach(el => { el.classList.remove('active-green', 'active-amber', 'active-red'); });
-            document.querySelectorAll('.text-black, .text-white').forEach(el => { el.classList.replace('text-white', 'text-black'); });
+            document.querySelectorAll('.text-white').forEach(el => { el.classList.replace('text-white', 'text-black'); });
 
-            if (code.startsWith('4') && fleetType === 'CEO') {
+            let code = data.trigger_code;
+            let fleet = data.fleet_type;
+            let gw = data.gw_lbs;
+            let mlw = data.mlw_lbs;
+            let status = data.status;
+
+            if (code.startsWith('4') && fleet === 'CEO') {
                 document.getElementById('ceoFlowchartArea').style.display = 'block';
                 let activePaths = [], endNodeId = '', statusClass = '';
+                
                 const isOverweight = gw > mlw;
 
                 if (!isOverweight) {
@@ -495,52 +500,61 @@
                     else { activePaths.push('ceo-p6'); endNodeId = 'ceo-nms2'; statusClass = 'active-green'; }
                 }
 
-                activePaths.forEach(id => { let p = document.getElementById(id); if(p){ p.classList.add('active'); p.setAttribute('marker-end', 'url(#arrow-red)'); }});
-                if(endNodeId) { document.getElementById(endNodeId).classList.add(statusClass); document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); }
+                activePaths.forEach(id => document.getElementById(id).classList.add('active'));
+                if(endNodeId) { 
+                    document.getElementById(endNodeId).classList.add(statusClass); 
+                    document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); 
+                }
             
-            } else if (code.startsWith('4') && fleetType === 'NEO') {
+            } else if (code.startsWith('4') && fleet === 'NEO') {
                 document.getElementById('neoFlowchartArea').style.display = 'block';
-                let activePaths = ['neo-p-start'], endNodeId = '', statusClass = '';
+                let activePaths = [], endNodeId = '', statusClass = '';
 
                 if (vrta >= 2.06 || ny >= 0.5) {
-                    activePaths.push('neo-p-d1y'); endNodeId = 'neo-red'; statusClass = 'active-red';
+                    activePaths.push('neo-p1'); endNodeId = 'neo-red'; statusClass = 'active-red';
                 } else {
-                    activePaths.push('neo-p-d1n');
-                    if (vrta >= 1.80 || ny >= 0.45) { activePaths.push('neo-p-d2y'); endNodeId = 'neo-amber'; statusClass = 'active-amber'; }
-                    else { activePaths.push('neo-p-d2n'); endNodeId = 'neo-green'; statusClass = 'active-green'; }
+                    activePaths.push('neo-p2');
+                    if (vrta >= 1.80 || ny >= 0.45) { activePaths.push('neo-p3'); endNodeId = 'neo-amber'; statusClass = 'active-amber'; }
+                    else { activePaths.push('neo-p4'); endNodeId = 'neo-green'; statusClass = 'active-green'; }
                 }
 
-                activePaths.forEach(id => { let p = document.getElementById(id); if(p){ p.classList.add('active'); p.setAttribute('marker-end', 'url(#arrow-red-neo)'); }});
-                if(endNodeId) { document.getElementById(endNodeId).classList.add(statusClass); document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); }
+                activePaths.forEach(id => document.getElementById(id).classList.add('active'));
+                if(endNodeId) { 
+                    document.getElementById(endNodeId).classList.add(statusClass); 
+                    document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); 
+                }
             
             } else if (code === '5100' || code === '5200' || code === '5300') {
                 document.getElementById('turbFlowchartArea').style.display = 'block';
-                let limitText = code === '5300' ? "VRTA <= 0.0g or >= 2.0g" : "VRTA <= -1.0g or >= 2.5g";
-                document.getElementById('turb-limit-txt1').innerText = "LIMIT EXCEEDED?";
-                document.getElementById('turb-limit-txt2').innerText = `(${limitText})`;
+                let activePaths = [], endNodeId = '', statusClass = '';
+                
+                if (status === 'RED') { activePaths.push('turb-p1'); endNodeId = 'turb-red'; statusClass = 'active-red'; }
+                else { activePaths.push('turb-p2'); endNodeId = 'turb-green'; statusClass = 'active-green'; }
 
-                let activePaths = ['turb-p-start'], endNodeId = '', statusClass = '';
-                if (status === 'RED') { activePaths.push('turb-p-y'); endNodeId = 'turb-red'; statusClass = 'active-red'; }
-                else { activePaths.push('turb-p-n'); endNodeId = 'turb-green'; statusClass = 'active-green'; }
-
-                activePaths.forEach(id => { let p = document.getElementById(id); if(p){ p.classList.add('active'); p.setAttribute('marker-end', 'url(#arrow-red-turb)'); }});
-                if(endNodeId) { document.getElementById(endNodeId).classList.add(statusClass); document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); }
+                activePaths.forEach(id => document.getElementById(id).classList.add('active'));
+                if(endNodeId) { 
+                    document.getElementById(endNodeId).classList.add(statusClass); 
+                    document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); 
+                }
             
             } else if (code === '5600' || code === '5700') {
                 document.getElementById('latFlowchartArea').style.display = 'block';
-                let activePaths = ['lat-p-start'], endNodeId = '', statusClass = '';
+                let activePaths = [], endNodeId = '', statusClass = '';
 
-                if (ny > 0.41) { activePaths.push('lat-p-d1y'); endNodeId = 'lat-red'; statusClass = 'active-red'; }
+                if (lata > 0.41) { activePaths.push('lat-p1'); endNodeId = 'lat-red'; statusClass = 'active-red'; }
                 else {
-                    activePaths.push('lat-p-d1n');
-                    if (ny >= 0.35) { activePaths.push('lat-p-d2y'); endNodeId = 'lat-amber'; statusClass = 'active-amber'; }
-                    else { activePaths.push('lat-p-d2n'); endNodeId = 'lat-green'; statusClass = 'active-green'; }
+                    activePaths.push('lat-p2');
+                    if (lata >= 0.35) { activePaths.push('lat-p3'); endNodeId = 'lat-amber'; statusClass = 'active-amber'; }
+                    else { activePaths.push('lat-p4'); endNodeId = 'lat-green'; statusClass = 'active-green'; }
                 }
 
-                activePaths.forEach(id => { let p = document.getElementById(id); if(p){ p.classList.add('active'); p.setAttribute('marker-end', 'url(#arrow-red-lat)'); }});
-                if(endNodeId) { document.getElementById(endNodeId).classList.add(statusClass); document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); }
+                activePaths.forEach(id => document.getElementById(id).classList.add('active'));
+                if(endNodeId) { 
+                    document.getElementById(endNodeId).classList.add(statusClass); 
+                    document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); 
+                }
             }
         }
     </script>
 </body>
-</html>
+                        </html>
