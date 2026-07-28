@@ -6,6 +6,7 @@ from PIL import Image
 import google.generativeai as genai
 from fastapi import FastAPI, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -21,10 +22,14 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GEMINI_API_KEY: 
     genai.configure(api_key=GEMINI_API_KEY)
 
+@app.get("/")
+async def serve_frontend():
+    # 사용자가 메인 주소로 접속하면 templates/index.html 파일을 보여줍니다.
+    return FileResponse("templates/index.html")
+
 class AnalyzeRequest(BaseModel):
     text: str
 
-# 💡 Trigger Code 상세 설명 딕셔너리
 CODE_DESC = {
     "4100": "Excessive Radio Altitude Rate (RALR)",
     "4400": "Excessive Normal Acceleration (VRTA) (compared to the limit at landing) - during +/- 0.5 seconds before and after landing",
@@ -126,26 +131,22 @@ async def analyze_report(req: AnalyzeRequest):
     status = "UNKNOWN"
     reason = "판별 로직 오류"
 
-    # ========================================
-    # A. 하드랜딩 로직 (Trigger 4XXX)
-    # ========================================
     if trigger_code.startswith("4"):
         if fleet_type == "CEO":
             max_vrta = max([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
-            is_overweight = gw_lbs > mlw_lbs
             
+            # CEO의 경우 파싱된 GW와 고정된 MLW(166,448)를 수학적으로 비교
+            is_overweight = gw_lbs > mlw_lbs
             limit_amber = 1.7 if is_overweight else 2.6
             limit_red = 2.6 if is_overweight else 2.86
+            weight_str = f"Overweight [GW({gw_lbs:,} lbs) > MLW({mlw_lbs:,} lbs)]" if is_overweight else f"Normal Weight [GW({gw_lbs:,} lbs) <= MLW({mlw_lbs:,} lbs)]"
             
             if max_vrta >= limit_red:
-                status, reason = "RED", f"Severe Hard Landing [VRTA({max_vrta}g) >= {limit_red}g]"
+                status, reason = "RED", f"Severe Hard Landing [VRTA({max_vrta}g) >= {limit_red}g]\n- 기준: {weight_str}"
             elif max_vrta >= limit_amber:
-                status, reason = "AMBER", f"Hard Landing [VRTA({max_vrta}g) >= {limit_amber}g]"
+                status, reason = "AMBER", f"Hard Landing [VRTA({max_vrta}g) >= {limit_amber}g]\n- 기준: {weight_str}"
             else:
-                status, reason = "GREEN", f"분석 결과 Green Zone 입니다.\n(실제 최대 수직가속도(VRTA {max_vrta}g)가 AMBER 한계치({limit_amber}g)를 초과하지 않아 Normal Landing으로 판별됨)"
-                
-            weight_str = f"Overweight (GW {gw_lbs:,} > MLW {mlw_lbs:,})" if is_overweight else f"Normal Weight (GW {gw_lbs:,} <= MLW {mlw_lbs:,})"
-            reason += f"\n- 적용된 중량 조건: {weight_str}"
+                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)\n- 적용기준: {weight_str}"
 
         else:
             max_nz = max([v.get("Nz_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
@@ -156,11 +157,8 @@ async def analyze_report(req: AnalyzeRequest):
             elif max_nz >= 1.80 or max_ny >= 0.45:
                 status, reason = "AMBER", f"Hard Landing [Nz({max_nz}g) >= 1.80 or Ny({max_ny}g) >= 0.45]"
             else:
-                status, reason = "GREEN", f"분석 결과 Green Zone 입니다.\n(실제 최대 가속도(Nz {max_nz}g, Ny {max_ny}g)가 AMBER 한계치를 초과하지 않아 Normal Landing으로 판별됨)"
+                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)"
 
-    # ========================================
-    # B. 난기류 / Maneuver 로직 (Trigger 5100, 5200, 5300)
-    # ========================================
     elif trigger_code in ["5100", "5200", "5300"]:
         max_vrta = max([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
         min_vrta = min([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
@@ -169,16 +167,13 @@ async def analyze_report(req: AnalyzeRequest):
             if max_vrta >= 2.5 or min_vrta <= -1.0:
                 status, reason = "RED", f"Inspection Required: Turbulence/Maneuver [VRTA({max_vrta}g) >= 2.5g or VRTA({min_vrta}g) <= -1.0g]"
             else:
-                status, reason = "GREEN", f"분석 결과 Green Zone 입니다.\n(실제 수치(Max {max_vrta}g, Min {min_vrta}g)가 한계치(-1.0 ~ 2.5g) 이내이므로 No Inspection Required)"
+                status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)"
         elif trigger_code == "5300": # Flaps Extended
             if max_vrta >= 2.0 or min_vrta <= 0.0:
                  status, reason = "RED", f"Inspection Required: Turbulence/Maneuver (Flaps Ext) [VRTA({max_vrta}g) >= 2.0g or VRTA({min_vrta}g) <= 0.0g]"
             else:
-                 status, reason = "GREEN", f"분석 결과 Green Zone 입니다.\n(실제 수치(Max {max_vrta}g, Min {min_vrta}g)가 한계치(0.0 ~ 2.0g) 이내이므로 No Inspection Required)"
+                 status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)"
 
-    # ========================================
-    # C. 측면 가속도 로직 (Trigger 5600, 5700)
-    # ========================================
     elif trigger_code in ["5600", "5700"]:
         max_lata = max([v.get("LATA", 0) for v in kpi_data.values()]) if kpi_data else 0
         if max_lata > 0.41:
@@ -186,7 +181,7 @@ async def analyze_report(req: AnalyzeRequest):
         elif max_lata >= 0.35:
             status, reason = "AMBER", f"High Lateral [LATA({max_lata}g) >= 0.35g]"
         else:
-            status, reason = "GREEN", f"분석 결과 Green Zone 입니다.\n(실제 최대 측면가속도(LATA {max_lata}g)가 AMBER 한계치(0.35g) 미만이므로 No Inspection Required)"
+            status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)"
 
     else:
         status = "RED"
