@@ -1,6 +1,5 @@
 import os
 import json
-import re
 import io
 from PIL import Image
 import google.generativeai as genai
@@ -74,6 +73,7 @@ async def analyze_report(req: AnalyzeRequest):
     kpi_data = {}
     gw_lbs = 0
     
+    # 텍스트 파싱
     for line in lines:
         if "HL" in line:
             parts = line.split()
@@ -122,7 +122,7 @@ async def analyze_report(req: AnalyzeRequest):
 
     if trigger_code.startswith("4"):
         if fleet_type == "CEO":
-            # S3와 T3 라인의 VRTA(첫번째 값)를 추출하여 Max 계산
+            # E1 값 무시하고 오직 S3와 T3 라인의 VRTA(첫번째 값) 추출하여 Max 계산
             s3_vrta = kpi_data.get("S3", {}).get("VRTA", 0.0)
             t3_vrta = kpi_data.get("T3", {}).get("VRTA", 0.0)
             max_vrta = max(s3_vrta, t3_vrta)
@@ -133,22 +133,25 @@ async def analyze_report(req: AnalyzeRequest):
             weight_str = f"Overweight [GW({gw_lbs:,} lbs) > MLW({mlw_lbs:,} lbs)]" if is_overweight else f"Normal Weight [GW({gw_lbs:,} lbs) <= MLW({mlw_lbs:,} lbs)]"
             
             if max_vrta >= limit_red:
-                status, reason = "RED", f"Severe Hard Landing [VRTA({max_vrta}g) >= {limit_red}g]\n- 기준: {weight_str}"
+                status = "RED"
+                reason = f"Severe Hard Landing\n- 판독값: VRTA {max_vrta}g (LIMIT: {limit_red}g 이상)\n- 기준: {weight_str}"
             elif max_vrta >= limit_amber:
-                status, reason = "AMBER", f"Hard Landing [VRTA({max_vrta}g) >= {limit_amber}g]\n- 기준: {weight_str}"
+                status = "AMBER"
+                reason = f"Hard Landing\n- 판독값: VRTA {max_vrta}g (LIMIT: {limit_amber}g 이상)\n- 기준: {weight_str}"
             else:
-                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)\n- 기준: {weight_str}"
+                status = "GREEN"
+                reason = f"Normal Landing (Limit Not Exceeded)\n- 판독값: VRTA {max_vrta}g (LIMIT: {limit_amber}g 미만)\n- 기준: {weight_str}"
 
         else: # NEO
             max_nz = max([v.get("Nz_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
             max_ny = max([v.get("Ny_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
 
             if max_nz >= 2.06 or max_ny >= 0.5:
-                status, reason = "RED", f"Severe Hard Landing [Nz({max_nz}g) >= 2.06 or Ny({max_ny}g) >= 0.5]"
+                status, reason = "RED", f"Severe Hard Landing\n- 판독값: Nz {max_nz}g / Ny {max_ny}g\n- 기준: Nz >= 2.06 or Ny >= 0.5"
             elif max_nz >= 1.80 or max_ny >= 0.45:
-                status, reason = "AMBER", f"Hard Landing [Nz({max_nz}g) >= 1.80 or Ny({max_ny}g) >= 0.45]"
+                status, reason = "AMBER", f"Hard Landing\n- 판독값: Nz {max_nz}g / Ny {max_ny}g\n- 기준: Nz >= 1.80 or Ny >= 0.45"
             else:
-                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)"
+                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)\n- 판독값: Nz {max_nz}g / Ny {max_ny}g"
 
     elif trigger_code in ["5100", "5200", "5300"]:
         max_vrta = max([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
@@ -156,23 +159,23 @@ async def analyze_report(req: AnalyzeRequest):
         
         if trigger_code in ["5100", "5200"]:
             if max_vrta >= 2.5 or min_vrta <= -1.0:
-                status, reason = "RED", f"Inspection Required: Turbulence/Maneuver [VRTA({max_vrta}g) >= 2.5g or VRTA({min_vrta}g) <= -1.0g]"
+                status, reason = "RED", f"Inspection Required: Turbulence/Maneuver\n- 판독값: MAX {max_vrta}g / MIN {min_vrta}g\n- 기준: VRTA >= 2.5g or VRTA <= -1.0g"
             else:
-                status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)"
+                status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 판독값: MAX {max_vrta}g / MIN {min_vrta}g"
         elif trigger_code == "5300":
             if max_vrta >= 2.0 or min_vrta <= 0.0:
-                 status, reason = "RED", f"Inspection Required: Turbulence/Maneuver (Flaps Ext) [VRTA({max_vrta}g) >= 2.0g or VRTA({min_vrta}g) <= 0.0g]"
+                 status, reason = "RED", f"Inspection Required: Turbulence/Maneuver (Flaps Ext)\n- 판독값: MAX {max_vrta}g / MIN {min_vrta}g\n- 기준: VRTA >= 2.0g or VRTA <= 0.0g"
             else:
-                 status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)"
+                 status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 판독값: MAX {max_vrta}g / MIN {min_vrta}g"
 
     elif trigger_code in ["5600", "5700"]:
         max_lata = max([v.get("LATA", 0) for v in kpi_data.values()]) if kpi_data else 0
         if max_lata > 0.41:
-            status, reason = "RED", f"Severe High Lateral [LATA({max_lata}g) > 0.41g]"
+            status, reason = "RED", f"Severe High Lateral\n- 판독값: LATA {max_lata}g (LIMIT: > 0.41g)"
         elif max_lata >= 0.35:
-            status, reason = "AMBER", f"High Lateral [LATA({max_lata}g) >= 0.35g]"
+            status, reason = "AMBER", f"High Lateral\n- 판독값: LATA {max_lata}g (LIMIT: >= 0.35g)"
         else:
-            status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)"
+            status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 판독값: LATA {max_lata}g"
     else:
         status = "UNKNOWN"
         reason = f"분석 불가 (코드 매칭 실패)"
