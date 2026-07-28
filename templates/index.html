@@ -91,7 +91,6 @@
         let currentChart = null; 
         let pastedImageFile = null;
 
-        // 이미지 붙여넣기 이벤트 처리
         document.addEventListener('paste', function(e) {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
             for (let index in items) {
@@ -207,7 +206,7 @@
                 titleX = '착륙 시점 (측면가속도는 CEO Hard Landing 판별과 무관함)';
                 plotX = 0.5; xMax = 1.0;
                 
-                const isOverweight = gw > mlw;
+                const isOverweight = code === "4800" || code === "4900";
                 const nzRedLimit = isOverweight ? 2.6 : 2.86;
                 const nzAmberLimit = isOverweight ? 1.7 : 2.6;
                 
@@ -265,7 +264,7 @@
             let activeLinks = [];
             
             if (code.startsWith('4') && fleetType === 'CEO') {
-                const isOverweight = gw > mlw;
+                const isOverweight = code === "4800" || code === "4900";
                 const nzAmberLimit = isOverweight ? 1.7 : 2.6;
                 const nzRedLimit = isOverweight ? 2.6 : 2.86;
                 const weightStatus = isOverweight ? `GW(${gw}) > MLW(${mlw})<br>Overweight` : `GW(${gw}) <= MLW(${mlw})<br>Normal Weight`;
@@ -273,7 +272,7 @@
                 graphDefinition += `A[Load Report Code: ${code}] --> B{GW <= MLW?}\n`; 
                 graphDefinition += `B -- ${weightStatus} --> C{VRTA >= ${nzAmberLimit}g?}\n`; 
                 graphDefinition += `C -- Yes --> D{VRTA >= ${nzRedLimit}g?}\n`; 
-                graphDefinition += `C -- No --> E[분석 결과 GREEN ZONE<br>Normal Landing]\n`; 
+                graphDefinition += `C -- No --> E[GREEN ZONE<br>Normal Landing]\n`; 
                 graphDefinition += `D -- Yes --> F[RED ZONE<br>Severe Hard Landing]\n`; 
                 graphDefinition += `D -- No --> G[AMBER ZONE<br>Hard Landing]\n`; 
 
@@ -294,7 +293,7 @@
                 graphDefinition += `B -- Yes --> C[RED ZONE<br>Severe Hard Landing]\n`; 
                 graphDefinition += `B -- No --> D{Nz >= 1.80 or Ny >= 0.45?}\n`; 
                 graphDefinition += `D -- Yes --> E[AMBER ZONE<br>Hard Landing]\n`; 
-                graphDefinition += `D -- No --> F[분석 결과 GREEN ZONE<br>Normal Landing]\n`; 
+                graphDefinition += `D -- No --> F[GREEN ZONE<br>Normal Landing]\n`; 
 
                 activeLinks.push(0);
                 if (status.includes('RED')) {
