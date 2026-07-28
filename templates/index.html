@@ -178,12 +178,19 @@
             statusBox.innerText = "상태: " + data.status;
 
             let maxNz = 0; let maxNy = 0;
-            for (const key in data.kpi_data) {
-                let item = data.kpi_data[key];
-                if (item.Nz_kpi !== undefined) maxNz = Math.max(maxNz, item.Nz_kpi);
-                if (item.Ny_kpi !== undefined) maxNy = Math.max(maxNy, item.Ny_kpi);
-                if (item.VRTA !== undefined) maxNz = Math.max(maxNz, item.VRTA);
-                if (item.LATA !== undefined) maxNy = Math.max(maxNy, item.LATA);
+            // E1은 백엔드에서 제거됨. S3, T3 등에서 정확한 값을 그리기 위해 필터링
+            if (data.fleet_type === 'CEO' && data.trigger_code.startsWith('4')) {
+                let s3 = data.kpi_data['S3'] ? data.kpi_data['S3'].VRTA : 0;
+                let t3 = data.kpi_data['T3'] ? data.kpi_data['T3'].VRTA : 0;
+                maxNz = Math.max(s3, t3);
+            } else {
+                for (const key in data.kpi_data) {
+                    let item = data.kpi_data[key];
+                    if (item.Nz_kpi !== undefined) maxNz = Math.max(maxNz, item.Nz_kpi);
+                    if (item.Ny_kpi !== undefined) maxNy = Math.max(maxNy, item.Ny_kpi);
+                    if (item.VRTA !== undefined) maxNz = Math.max(maxNz, item.VRTA);
+                    if (item.LATA !== undefined) maxNy = Math.max(maxNy, item.LATA);
+                }
             }
             
             drawChart(maxNy, maxNz, data.fleet_type, data.trigger_code, data.gw_lbs, data.mlw_lbs);
@@ -198,15 +205,14 @@
             let chartData, chartOptions;
 
             if (fleetType === 'CEO' && code.startsWith('4')) {
-                // CEO 2차원 그래프 (Weight vs VRTA) - 사진 원본 100% 구현
                 document.getElementById('chartTitle').innerText = '📊 A321 CEO Hard Landing Limit (Weight vs VRTA)';
                 
-                const mtow = 220000; // 그래프를 그리기 위한 최대 무게 (여유 공간 포함)
-                const safeGw = gw > 0 ? gw : 150000; // 데이터 없을 경우 임시 점 찍기
+                const mtow = 220000; 
+                const safeGw = gw > 0 ? gw : 150000; 
 
                 chartData = {
                     datasets: [{
-                        label: '리포트 판독 수치 (GW vs MAX VRTA)', 
+                        label: '리포트 판독 수치 (GW vs VRTA_Max)', 
                         data: [{x: safeGw, y: nz}],
                         backgroundColor: 'blue', borderColor: 'white', borderWidth: 3, pointRadius: 10, pointHoverRadius: 12
                     }]
@@ -221,15 +227,12 @@
                     plugins: { 
                         annotation: { 
                             annotations: { 
-                                // Left Side (Normal Weight GW <= MLW)
                                 boxLeftRed: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.86, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
                                 boxLeftAmber: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.6, yMax: 2.86, backgroundColor: 'rgba(255, 153, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
                                 boxLeftGreen: { type: 'box', xMin: 100000, xMax: mlw, yMin: 0, yMax: 2.6, backgroundColor: 'rgba(0, 255, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
-                                // Right Side (Overweight GW > MLW)
                                 boxRightRed: { type: 'box', xMin: mlw, xMax: mtow, yMin: 2.6, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
                                 boxRightAmber: { type: 'box', xMin: mlw, xMax: mtow, yMin: 1.7, yMax: 2.6, backgroundColor: 'rgba(255, 153, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
                                 boxRightGreen: { type: 'box', xMin: mlw, xMax: mtow, yMin: 0, yMax: 1.7, backgroundColor: 'rgba(0, 255, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
-                                // MLW Line
                                 lineMlw: { type: 'line', xMin: mlw, xMax: mlw, yMin: 0, yMax: 4.0, borderColor: 'black', borderWidth: 2, label: { content: 'MLW', display: true, position: 'end', yAdjust: 15 } }
                             } 
                         },
@@ -238,7 +241,6 @@
                 };
 
             } else {
-                // NEO 또는 In-Flight(5XXX) 그래프
                 let yMax = 3.5; let xMax = 0.6;
                 let titleY = '수직 가속도 (Vertical)'; let titleX = '측면 가속도 (Lateral)';
                 let redBox, amberBox, greenBox;
@@ -253,9 +255,9 @@
                 } else if (code.startsWith('5')) {
                     document.getElementById('chartTitle').innerText = '📊 In-Flight Turbulence / LATA Limit';
                     titleY = '가속도 수치 (g)'; titleX = '데이터 발생 시점 (임시)';
-                    xMax = 1.0; ny = 0.5; // X축 무의미
+                    xMax = 1.0; ny = 0.5;
                     if(code === '5600' || code === '5700') {
-                        yMax = 0.6; nz = ny; // LATA를 Y축으로 사용
+                        yMax = 0.6; nz = ny; 
                         redBox = { type: 'box', xMin: 0, xMax: 1.0, yMin: 0.41, yMax: 0.6, backgroundColor: 'rgba(220, 53, 69, 0.4)', borderWidth: 0 };
                         amberBox = { type: 'box', xMin: 0, xMax: 1.0, yMin: 0.35, yMax: 0.41, backgroundColor: 'rgba(255, 193, 7, 0.4)', borderWidth: 0 };
                         greenBox = { type: 'box', xMin: 0, xMax: 1.0, yMin: 0, yMax: 0.35, backgroundColor: 'rgba(40, 167, 69, 0.4)', borderWidth: 0 };
