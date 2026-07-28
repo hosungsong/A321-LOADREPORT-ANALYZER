@@ -29,25 +29,25 @@ async def serve_frontend():
     elif os.path.exists("index.html"):
         return FileResponse("index.html")
     else:
-        return HTMLResponse("<h1>화면 파일을 찾을 수 없습니다. 깃허브에 index.html 파일이 있는지 확인해주세요.</h1>")
+        return HTMLResponse("<h1>화면 파일을 찾을 수 없습니다. 깃허브에 templates/index.html 파일이 있는지 확인해주세요.</h1>")
 
 class AnalyzeRequest(BaseModel):
     text: str
 
 CODE_DESC = {
     "4100": "Excessive Radio Altitude Rate (RALR)",
-    "4400": "Excessive Normal Acceleration (VRTA) (compared to the limit at landing) - during +/- 0.5 seconds before and after landing",
-    "4500": "Excessive Normal Acceleration (VRTA) (compared to the limit at landing with bounce) - during +/- 0.5 seconds at landing (VRTA > VRTAL1.2) or at bounce (VRTA > VRTAL1.3)",
-    "4800": "Excessive Gross Weight (GW) (compared to Radio Altitude Rate (RALR)) - at dataset time at landing",
-    "4900": "Excessive Gross Weight (GW) - compared to Normal Acceleration (VRTA) - during +/- 0.5 seconds before and after landing",
     "4310": "Over-weight red-bounce hard-landing",
     "4320": "Over-weight amber-bounce hard-landing",
+    "4400": "Excessive Normal Acceleration (VRTA) (compared to the limit at landing) - during +/- 0.5 seconds before and after landing",
     "4410": "Over-weight red hard-landing",
     "4420": "Over-weight amber hard-landing",
+    "4500": "Excessive Normal Acceleration (VRTA) (compared to the limit at landing with bounce) - during +/- 0.5 seconds at landing (VRTA > VRTAL1.2) or at bounce (VRTA > VRTAL1.3)",
     "4510": "Red bounce hard-landing",
     "4520": "Amber bounce hard-landing",
     "4610": "Red hard landing",
     "4620": "Amber hard landing",
+    "4800": "Excessive Gross Weight (GW) (compared to Radio Altitude Rate (RALR)) - at dataset time at landing",
+    "4900": "Excessive Gross Weight (GW) - compared to Normal Acceleration (VRTA) - during +/- 0.5 seconds before and after landing",
     "5100": "Excessive normal acceleration (VRTA), compared to the positive limit and flap in clean configuration",
     "5200": "Excessive normal acceleration (VRTA), compared to the negative limit and flap in clean configuration",
     "5300": "Excessive normal acceleration (VRTA), compared to the positive or negative limit with extended flaps",
@@ -86,8 +86,7 @@ async def analyze_report(req: AnalyzeRequest):
         elif line.startswith("C1 ") or line.startswith("C1\t"):
             parts = line.split()
             if len(parts) > 3: 
-                trigger_code = parts[3] # C1 라인의 4번째 값(CODE) 정확히 추출
-        
+                trigger_code = parts[3] 
         elif line.startswith("CE ") or line.startswith("CE\t"):
             parts = line.split()
             if len(parts) >= 6:
@@ -95,7 +94,6 @@ async def analyze_report(req: AnalyzeRequest):
                     gw_value = int(parts[5]) 
                     gw_lbs = gw_value * 100
                 except: pass
-
         elif line.startswith("U1") or line.startswith("U2"):
             fleet_type = "NEO"
             parts = line.split()
@@ -106,7 +104,6 @@ async def analyze_report(req: AnalyzeRequest):
                         "Ny_kpi": float(parts[2])/100
                     }
                 except: pass
-
         elif line.startswith("S3") or line.startswith("T3") or line.startswith("S4") or line.startswith("T4"):
             if fleet_type == "UNKNOWN": fleet_type = "CEO"
             parts = line.split()
@@ -115,27 +112,22 @@ async def analyze_report(req: AnalyzeRequest):
                     "VRTA": parse_s3_t3_value(parts[1]),
                     "LATA": parse_s3_t3_value(parts[3])
                 }
-        elif line.startswith("E1"):
-            if fleet_type == "UNKNOWN": fleet_type = "CEO"
-            parts = line.split()
-            if len(parts) >= 4:
-                kpi_data[parts[0]] = { "VRTA": parse_s3_t3_value(parts[1]), "LATA": parse_s3_t3_value(parts[3]) }
 
     if fleet_type == "UNKNOWN" and trigger_code != "UNKNOWN":
         fleet_type = "CEO" 
 
-    # MLW 상숫값
     mlw_lbs = 166448 if fleet_type == "CEO" else 174606
     status = "UNKNOWN"
     reason = "판별 로직 오류"
 
     if trigger_code.startswith("4"):
         if fleet_type == "CEO":
-            max_vrta = max([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
+            # S3와 T3 라인의 VRTA(첫번째 값)를 추출하여 Max 계산
+            s3_vrta = kpi_data.get("S3", {}).get("VRTA", 0.0)
+            t3_vrta = kpi_data.get("T3", {}).get("VRTA", 0.0)
+            max_vrta = max(s3_vrta, t3_vrta)
             
-            # CEO 기종은 파싱된 GW와 MLW를 직접 비교
             is_overweight = gw_lbs > mlw_lbs
-            
             limit_amber = 1.7 if is_overweight else 2.6
             limit_red = 2.6 if is_overweight else 2.86
             weight_str = f"Overweight [GW({gw_lbs:,} lbs) > MLW({mlw_lbs:,} lbs)]" if is_overweight else f"Normal Weight [GW({gw_lbs:,} lbs) <= MLW({mlw_lbs:,} lbs)]"
