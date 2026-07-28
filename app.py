@@ -6,21 +6,28 @@ from PIL import Image
 import io
 import os
 app=FastAPI()
-app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 genai.configure(api_key="본인의_GEMINI_API_KEY_입력")
 vision_model=genai.GenerativeModel('gemini-1.5-flash')
-class AnalyzeRequest(BaseModel): text:str
+class AnalyzeRequest(BaseModel):
+    text: str
 @app.post("/ocr")
-async def process_ocr(file:UploadFile=File(...)):
+async def process_ocr(file: UploadFile=File(...)):
     try:
         image_bytes=await file.read()
         image=Image.open(io.BytesIO(image_bytes))
-        response=vision_model.generate_content(["Extract all the text from this aircraft load report image exactly as it appears. Maintain the line breaks and spaces.",image])
-        return {"text":response.text}
+        response=vision_model.generate_content(["Extract all the text from this aircraft load report image exactly as it appears. Maintain the line breaks and spaces.", image])
+        return {"text": response.text}
     except Exception as e:
-        return {"error":str(e)}
+        return {"error": str(e)}
+def parse_g(v_str):
+    try:
+        v=float(v_str)
+        if '.' not in v_str: return v/100.0
+        return v
+    except ValueError: return 0.0
 def parse_report_data(text):
-    data={"lines":{}}
+    data={"lines": {}}
     fleet_type="CEO"
     trigger_code="UNKNOWN"
     gw_lbs=0
@@ -30,22 +37,19 @@ def parse_report_data(text):
         if not parts: continue
         header=parts[0]
         data["lines"][header]=parts[1:]
-        if header=='C1' and len(parts)>=4:
-            trigger_code=parts[3]
+        if header=='C1' and len(parts)>=4: trigger_code=parts[3]
         if header=='CE' and len(parts)>=2:
             try: gw_lbs=int(parts[1])*100
             except ValueError: pass
     upper_text=text.upper()
-    if any(kw in upper_text for kw in ["NEO","LEAP","PW11","A321-25","A321-27"]):
-        fleet_type="NEO"
     neo_tails=["8364","8371","8356","8398","8399","8510","8511","8534","8533","8582","8584","8586","8705"]
-    if any(tail in upper_text for tail in neo_tails):
-        fleet_type="NEO"
-    return fleet_type,trigger_code,data["lines"],gw_lbs
+    if any(kw in upper_text for kw in ["NEO","LEAP","PW11","A321-25","A321-27"]): fleet_type="NEO"
+    if any(tail in upper_text for tail in neo_tails): fleet_type="NEO"
+    return fleet_type, trigger_code, data["lines"], gw_lbs
 @app.post("/analyze")
-def analyze_report(req:AnalyzeRequest):
+def analyze_report(req: AnalyzeRequest):
     try:
-        fleet_type,trigger_code,lines_dict,gw_lbs=parse_report_data(req.text)
+        fleet_type, trigger_code, lines_dict, gw_lbs=parse_report_data(req.text)
         status="GREEN"
         reason="데이터 분석 완료"
         kpi_data={}
@@ -54,103 +58,72 @@ def analyze_report(req:AnalyzeRequest):
         if fleet_type=="CEO" and trigger_code.startswith("4"):
             s3_vrta=0.0
             t3_vrta=0.0
-            if "S3" in lines_dict and len(lines_dict["S3"])>=1:
-                try: s3_vrta=float(lines_dict["S3"][0])
-                except ValueError: pass
-            if "T3" in lines_dict and len(lines_dict["T3"])>=1:
-                try: t3_vrta=float(lines_dict["T3"][0])
-                except ValueError: pass
-            max_vrta=max(s3_vrta,t3_vrta)
-            kpi_data["S3"]={"VRTA":max_vrta}
-            is_overweight=gw_lbs>CEO_MLW
-            if not is_overweight:
+            if "S3" in lines_dict and len(lines_dict["S3"])>=1: s3_vrta=parse_g(lines_dict["S3"][0])
+            if "T3" in lines_dict and len(lines_dict["T3"])>=1: t3_vrta=parse_g(lines_dict["T3"][0])
+            max_vrta=max(s3_vrta, t3_vrta)
+            kpi_data["S3"]={"VRTA": max_vrta}
+            if gw_lbs<=CEO_MLW:
                 if max_vrta>=2.86:
-                    status="RED"
-                    reason=f"Severe Hard Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: VRTA >= 2.86g"
+                    status, reason="RED", f"Severe Hard Landing\n- VRTA: {max_vrta}g\n- LIMIT: >= 2.86g\n- 중량: Normal"
                 elif max_vrta>=2.6:
-                    status="AMBER"
-                    reason=f"Hard Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: VRTA >= 2.6g"
+                    status, reason="AMBER", f"Hard Landing\n- VRTA: {max_vrta}g\n- LIMIT: >= 2.6g\n- 중량: Normal"
                 else:
-                    status="GREEN"
-                    reason=f"Normal Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: 2.6g 미달"
+                    status, reason="GREEN", f"Normal Landing\n- VRTA: {max_vrta}g\n- LIMIT: 2.6g 미달"
             else:
                 if max_vrta>=2.6:
-                    status="RED"
-                    reason=f"Severe Hard Overweight Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: VRTA >= 2.6g"
+                    status, reason="RED", f"Severe Hard Overweight Landing\n- VRTA: {max_vrta}g\n- LIMIT: >= 2.6g\n- 중량: Overweight"
                 elif max_vrta>=1.7:
-                    status="AMBER"
-                    reason=f"Hard Overweight Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: VRTA >= 1.7g"
+                    status, reason="AMBER", f"Hard Overweight Landing\n- VRTA: {max_vrta}g\n- LIMIT: >= 1.7g\n- 중량: Overweight"
                 else:
-                    status="GREEN"
-                    reason=f"Normal Landing\n- 측정치: VRTA = {max_vrta}g\n- LIMIT: 1.7g 미달"
+                    status, reason="GREEN", f"Normal Landing\n- VRTA: {max_vrta}g\n- LIMIT: 1.7g 미달"
         elif fleet_type=="NEO" and trigger_code.startswith("4"):
-            max_nz=0.0
-            max_ny=0.0
-            for key in ["U1","U2"]:
+            max_nz, max_ny=0.0, 0.0
+            for key in ["U1", "U2"]:
                 if key in lines_dict and len(lines_dict[key])>=2:
-                    try:
-                        nz=float(lines_dict[key][0])
-                        ny=float(lines_dict[key][1])
-                        max_nz=max(max_nz,nz)
-                        max_ny=max(max_ny,ny)
-                        kpi_data[key]={"Nz_kpi":nz,"Ny_kpi":ny}
-                    except ValueError: pass
+                    nz, ny=parse_g(lines_dict[key][0]), parse_g(lines_dict[key][1])
+                    max_nz, max_ny=max(max_nz, nz), max(max_ny, ny)
+                    kpi_data[key]={"Nz_kpi": nz, "Ny_kpi": ny}
             if max_nz>=2.06 or max_ny>=0.5:
                 status="RED"
-                reason=f"Severe Hard Landing\n- 측정치: Nz = {max_nz}g, Ny = {max_ny}g\n- LIMIT: Nz >= 2.06g or Ny >= 0.5g"
+                reason=f"Severe Hard Landing\n- Nz: {max_nz}g, Ny: {max_ny}g\n- LIMIT: Nz >= 2.06g or Ny >= 0.5g"
             elif max_nz>=1.80 or max_ny>=0.45:
                 status="AMBER"
-                reason=f"Hard Landing\n- 측정치: Nz = {max_nz}g, Ny = {max_ny}g\n- LIMIT: Nz >= 1.80g or Ny >= 0.45g"
+                reason=f"Hard Landing\n- Nz: {max_nz}g, Ny: {max_ny}g\n- LIMIT: Nz >= 1.80g or Ny >= 0.45g"
             else:
                 status="GREEN"
-                reason=f"Normal Landing\n- 측정치: Nz = {max_nz}g, Ny = {max_ny}g\n- LIMIT 미달"
-        elif trigger_code in ["5100","5200","5300"]:
+                reason=f"Normal Landing\n- Nz: {max_nz}g, Ny: {max_ny}g\n- LIMIT 미달"
+        elif trigger_code in ["5100", "5200", "5300"]:
             vrta=0.0
-            if "S3" in lines_dict and len(lines_dict["S3"])>=1:
-                try: vrta=float(lines_dict["S3"][0])
-                except ValueError: pass
-            kpi_data["S3"]={"VRTA":vrta}
+            if "S3" in lines_dict and len(lines_dict["S3"])>=1: vrta=parse_g(lines_dict["S3"][0])
+            kpi_data["S3"]={"VRTA": vrta}
             if trigger_code=="5300":
                 if vrta<=0.0 or vrta>=2.0:
-                    status="RED"
-                    reason=f"Inspection Required\n- 측정치: VRTA = {vrta}g\n- LIMIT: <= 0.0g or >= 2.0g"
+                    status, reason="RED", f"Inspection Required\n- VRTA: {vrta}g\n- LIMIT: <= 0.0g or >= 2.0g"
                 else:
-                    status="GREEN"
-                    reason=f"Normal\n- 측정치: VRTA = {vrta}g"
+                    status, reason="GREEN", f"Normal\n- VRTA: {vrta}g"
             else:
                 if vrta<=-1.0 or vrta>=2.5:
-                    status="RED"
-                    reason=f"Inspection Required\n- 측정치: VRTA = {vrta}g\n- LIMIT: <= -1.0g or >= 2.5g"
+                    status, reason="RED", f"Inspection Required\n- VRTA: {vrta}g\n- LIMIT: <= -1.0g or >= 2.5g"
                 else:
-                    status="GREEN"
-                    reason=f"Normal\n- 측정치: VRTA = {vrta}g"
-        elif trigger_code in ["5600","5700"]:
+                    status, reason="GREEN", f"Normal\n- VRTA: {vrta}g"
+        elif trigger_code in ["5600", "5700"]:
             lata=0.0
-            if "S4" in lines_dict and len(lines_dict["S4"])>=1:
-                try: lata=float(lines_dict["S4"][0])
-                except ValueError: pass
-            kpi_data["S4"]={"LATA":lata}
+            if "S4" in lines_dict and len(lines_dict["S4"])>=1: lata=parse_g(lines_dict["S4"][0])
+            kpi_data["S4"]={"LATA": lata}
             if lata>0.41:
-                status="RED"
-                reason=f"Severe High Lateral\n- 측정치: LATA = {lata}g\n- LIMIT: > 0.41g"
+                status, reason="RED", f"Severe High Lateral\n- LATA: {lata}g\n- LIMIT: > 0.41g"
             elif lata>=0.35:
-                status="AMBER"
-                reason=f"High Lateral\n- 측정치: LATA = {lata}g\n- LIMIT: >= 0.35g"
+                status, reason="AMBER", f"High Lateral\n- LATA: {lata}g\n- LIMIT: >= 0.35g"
             else:
-                status="GREEN"
-                reason=f"Normal\n- 측정치: LATA = {lata}g"
-        else:
-            reason="정의되지 않은 코드"
+                status, reason="GREEN", f"Normal\n- LATA: {lata}g"
+        else: reason="정의되지 않은 코드"
         mlw_lbs=CEO_MLW if fleet_type=="CEO" else NEO_MLW
-        return {"fleet_type":fleet_type,"aircraft_id":lines_dict.get("AH",[""])[0],"trigger_code":trigger_code,"status":status,"reason":reason,"kpi_data":kpi_data,"gw_lbs":gw_lbs,"mlw_lbs":mlw_lbs}
-    except Exception as e:
-        return {"error":str(e)}
+        return {"fleet_type": fleet_type, "aircraft_id": lines_dict.get("AH", [""])[0], "trigger_code": trigger_code, "status": status, "reason": reason, "kpi_data": kpi_data, "gw_lbs": gw_lbs, "mlw_lbs": mlw_lbs}
+    except Exception as e: return {"error": str(e)}
 @app.get("/")
 def read_root():
     from fastapi.responses import HTMLResponse
-    html_path=os.path.join("templates","index.html")
+    html_path=os.path.join("templates", "index.html")
     if os.path.exists(html_path):
-        with open(html_path,"r",encoding="utf-8") as f:
-            return HTMLResponse(content=f.read(),status_code=200)
-    else:
-        return HTMLResponse(content="<h1>index.html not found</h1>",status_code=404)
+        with open(html_path, "r", encoding="utf-8") as f: return HTMLResponse(content=f.read(), status_code=200)
+    return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
