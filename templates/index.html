@@ -180,8 +180,8 @@
             else statusBox.innerText = "분석 결과: " + data.status + " ZONE";
 
             let maxNz = 0; let maxNy = 0;
-            // S3, T3의 첫번째 값(VRTA)만 읽어서 맥스값 계산 (E1 배제)
             if (data.fleet_type === 'CEO' && data.trigger_code.startsWith('4')) {
+                // CEO는 S3, T3의 첫번째 값(VRTA)만 읽어서 맥스값 계산
                 let s3 = data.kpi_data['S3'] ? data.kpi_data['S3'].VRTA : 0;
                 let t3 = data.kpi_data['T3'] ? data.kpi_data['T3'].VRTA : 0;
                 maxNz = Math.max(s3, t3);
@@ -297,7 +297,7 @@
             
             if (code.startsWith('4') && fleetType === 'CEO') {
                 const isOverweight = gw > mlw;
-                // 매뉴얼의 전체 박스를 빠짐없이 그리고, 선을 직각(Orthogonal)으로 설정합니다.
+                // 매뉴얼의 전체 박스를 빠짐없이 그리고, 선을 직각(Orthogonal/step)으로 설정합니다.
                 graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
                 
                 graphDefinition += `  T1([PRIMARY TRIGGER<br>FLIGHT CREW REPORT OF A HARD<br>LANDING OR A HARD OVERWEIGHT<br>LANDING ON THE MLG ONLY])\n`;
@@ -329,7 +329,8 @@
                 graphDefinition += `  T2 --> B1\n`; // 6
                 graphDefinition += `  B3 --> D2\n`; // 7
                 
-                graphDefinition += `  D2 -- YES --> D3\n`; // 8 (Start tracing from here)
+                // 여기서부터 GW <= MLW 판단 로직의 선(Link) 번호가 시작됩니다 (번호 8번)
+                graphDefinition += `  D2 -- YES --> D3\n`; // 8
                 graphDefinition += `  D2 -- NO --> D4\n`; // 9
                 graphDefinition += `  D3 -- NO --> B4\n`; // 10
                 graphDefinition += `  D3 -- YES --> D5\n`; // 11
@@ -345,7 +346,7 @@
                 graphDefinition += `  B8 --> B10\n`; // 20
                 graphDefinition += `  B9 --> B10\n`; // 21
 
-                // GW <= MLW 부터 판별 루트에 따라 화살표 색상 지정
+                // 분석 결과(GW, 상태)에 따라 매뉴얼 흐름도의 화살표를 빨간색으로 색칠
                 if (!isOverweight) {
                     if (status.includes('GREEN')) {
                         activeLinks.push(8, 10);
@@ -431,7 +432,7 @@
                 }
             }
             
-            // 지나온 길(Link)에 굵은 빨간색 화살표 그리기
+            // 지나온 길(Link)에 굵은 빨간색 화살표 적용
             if (activeLinks.length > 0) {
                 graphDefinition += `linkStyle ${activeLinks.join(',')} stroke:red,stroke-width:5px,color:red;\n`;
             }
