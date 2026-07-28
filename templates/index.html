@@ -199,10 +199,15 @@
                         const { x, y } = datapoint.tooltipPosition();
                         const text = `GW: ${dataset.data[index].x.toLocaleString()} / VRTA: ${dataset.data[index].y}g`;
                         ctx.save();
-                        ctx.fillStyle = 'black';
-                        ctx.font = 'bold 13px Arial';
+                        ctx.font = 'bold 14px Arial';
                         ctx.textAlign = 'center';
-                        ctx.fillText(text, x, y - 15);
+                        // 글씨 테두리 (어떤 배경에서도 잘 보이게 하얀색 테두리 추가)
+                        ctx.strokeStyle = 'white';
+                        ctx.lineWidth = 4;
+                        ctx.strokeText(text, x, y - 18);
+                        // 글씨 채우기
+                        ctx.fillStyle = 'black';
+                        ctx.fillText(text, x, y - 18);
                         ctx.restore();
                     });
                 });
@@ -297,7 +302,6 @@
 
             let maxNz = 0; let maxNy = 0;
             if (data.fleet_type === 'CEO' && data.trigger_code.startsWith('4')) {
-                // CEO 하드랜딩: S3, T3의 첫번째 값(VRTA)만 읽어서 계산 (E1 배제 완료)
                 let s3 = data.kpi_data['S3'] ? data.kpi_data['S3'].VRTA : 0;
                 let t3 = data.kpi_data['T3'] ? data.kpi_data['T3'].VRTA : 0;
                 maxNz = Math.max(s3, t3);
@@ -330,17 +334,22 @@
 
                 chartData = {
                     datasets: [{
-                        label: '리포트 판독 수치', // 범례 삭제 처리됨
+                        label: '리포트 판독 수치',
                         data: [{x: safeGw, y: nz}],
-                        backgroundColor: 'blue', borderColor: 'white', borderWidth: 3, pointRadius: 10, pointHoverRadius: 12
+                        backgroundColor: '#FFFF00', // 아주 잘 보이는 노란색
+                        borderColor: '#000000',     // 검은색 테두리
+                        borderWidth: 3, 
+                        pointRadius: 10,            // 점 크기
+                        pointHoverRadius: 12
                     }]
                 };
 
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
-                        legend: { display: false }, // 범례 삭제
+                        legend: { display: false }, 
                         annotation: { 
+                            drawTime: 'beforeDatasetsDraw', // 핵심! 배경 박스를 먼저 그리고 점을 그 위에 찍음
                             annotations: { 
                                 boxLeftRed: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.86, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
                                 boxLeftAmber: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.6, yMax: 2.86, backgroundColor: 'rgba(255, 153, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
@@ -351,7 +360,7 @@
                                 lineMlw: { type: 'line', xMin: mlw, xMax: mlw, yMin: 0, yMax: 4.0, borderColor: 'black', borderWidth: 2, label: { content: 'MLW', display: true, position: 'end', yAdjust: 15 } }
                             } 
                         },
-                        tooltip: { enabled: false } // 항상 라벨이 떠있으므로 마우스오버 툴팁은 끔
+                        tooltip: { enabled: false } 
                     },
                     scales: {
                         x: { type: 'linear', position: 'bottom', title: {display: true, text: 'AIRCRAFT WEIGHT (LBS)', font: {weight: 'bold'}}, min: 100000, max: mtow },
@@ -393,13 +402,17 @@
                 chartData = {
                     datasets: [{
                         label: '데이터', data: [{x: ny, y: nz}],
-                        backgroundColor: 'blue', borderColor: 'white', borderWidth: 2, pointRadius: 10, pointHoverRadius: 12
+                        backgroundColor: '#FFFF00', // 노란색 점
+                        borderColor: '#000000',     // 검은색 테두리
+                        borderWidth: 3, 
+                        pointRadius: 10, 
+                        pointHoverRadius: 12
                     }]
                 };
 
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, annotation: { annotations: { boxRed: redBox, boxAmber: amberBox, boxGreen: greenBox } } },
+                    plugins: { legend: { display: false }, annotation: { drawTime: 'beforeDatasetsDraw', annotations: { boxRed: redBox, boxAmber: amberBox, boxGreen: greenBox } } },
                     scales: { x: { type: 'linear', position: 'bottom', title: {display: true, text: titleX, font: {weight: 'bold'}}, min: 0, max: xMax }, y: { title: {display: true, text: titleY, font: {weight: 'bold'}}, min: (code.startsWith('5') && code !== '5600' && code !== '5700') ? -1.5 : 0, max: yMax } }
                 };
                 currentChart = new Chart(ctx, { type: 'scatter', data: chartData, options: chartOptions, plugins: [alwaysShowTooltipPlugin] });
