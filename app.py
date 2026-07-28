@@ -1,5 +1,4 @@
 import os
-import json
 import io
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +8,13 @@ import google.generativeai as genai
 
 app = FastAPI()
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GEMINI_API_KEY: 
@@ -34,7 +39,7 @@ CODE_DESC = {
     "4400": "Excessive Normal Acceleration (VRTA) (compared to the limit at landing) - during +/- 0.5 seconds before and after landing",
     "4410": "Over-weight red hard-landing",
     "4420": "Over-weight amber hard-landing",
-    "4500": "Excessive Normal Acceleration (VRTA) (compared to the limit at landing with bounce) - during +/- 0.5 seconds at landing (VRTA > VRTAL1.2) or at bounce (VRTA > VRTAL1.3)",
+    "4500": "Excessive Normal Acceleration (VRTA) (compared to the limit at landing with bounce)",
     "4510": "Red bounce hard-landing",
     "4520": "Amber bounce hard-landing",
     "4610": "Red hard landing",
@@ -44,8 +49,8 @@ CODE_DESC = {
     "5100": "Excessive normal acceleration (VRTA), compared to the positive limit and flap in clean configuration",
     "5200": "Excessive normal acceleration (VRTA), compared to the negative limit and flap in clean configuration",
     "5300": "Excessive normal acceleration (VRTA), compared to the positive or negative limit with extended flaps",
-    "5600": "Lateral acceleration (LATA) amber. If the value of the in-flight lateral acceleration is between 0.35 g and 0.41 g, the load report shows trigger code 5600.",
-    "5700": "Lateral acceleration (LATA) red. If the value of the in-flight lateral acceleration is more than 0.41 g, the load report shows trigger code 5700."
+    "5600": "Lateral acceleration (LATA) amber (0.35 g ~ 0.41 g)",
+    "5700": "Lateral acceleration (LATA) red (> 0.41 g)"
 }
 
 def parse_s3_t3_value(v_str):
@@ -118,32 +123,31 @@ async def analyze_report(req: AnalyzeRequest):
             t3_vrta = kpi_data.get("T3", {}).get("VRTA", 0.0)
             max_vrta = max(s3_vrta, t3_vrta)
             
-            # 4800, 4900은 Overweight / 4400, 4500은 Normal Weight
-            is_overweight = trigger_code in ["4800", "4900"]
+            is_overweight = gw_lbs > mlw_lbs
             limit_amber = 1.7 if is_overweight else 2.6
             limit_red = 2.6 if is_overweight else 2.86
             weight_str = f"Overweight [GW({gw_lbs:,} lbs) > MLW({mlw_lbs:,} lbs)]" if is_overweight else f"Normal Weight [GW({gw_lbs:,} lbs) <= MLW({mlw_lbs:,} lbs)]"
             
             if max_vrta >= limit_red:
                 status = "RED"
-                reason = f"Severe Hard Landing\n- 판독값: VRTA {max_vrta}g\n- LIMIT: {limit_red}g 이상\n- 기준: {weight_str}"
+                reason = f"Severe Hard Landing\n- VRTA: {max_vrta}g / LIMIT: {limit_red}g\n- {weight_str}"
             elif max_vrta >= limit_amber:
                 status = "AMBER"
-                reason = f"Hard Landing\n- 판독값: VRTA {max_vrta}g\n- LIMIT: {limit_amber}g 이상\n- 기준: {weight_str}"
+                reason = f"Hard Landing\n- VRTA: {max_vrta}g / LIMIT: {limit_amber}g\n- {weight_str}"
             else:
                 status = "GREEN"
-                reason = f"Normal Landing (Limit Not Exceeded)\n- 판독값: VRTA {max_vrta}g\n- LIMIT: {limit_amber}g 미만\n- 기준: {weight_str}"
+                reason = f"Normal Landing (Limit Not Exceeded)\n- VRTA: {max_vrta}g / LIMIT: {limit_amber}g\n- {weight_str}"
 
-        else: # NEO
+        else:
             max_nz = max([v.get("Nz_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
             max_ny = max([v.get("Ny_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
 
             if max_nz >= 2.06 or max_ny >= 0.5:
-                status, reason = "RED", f"Severe Hard Landing\n- 판독값: Nz {max_nz}g / Ny {max_ny}g\n- 기준: Nz >= 2.06 or Ny >= 0.5"
+                status, reason = "RED", f"Severe Hard Landing\n- Nz: {max_nz}g / Ny: {max_ny}g\n- Limit: Nz >= 2.06 or Ny >= 0.5"
             elif max_nz >= 1.80 or max_ny >= 0.45:
-                status, reason = "AMBER", f"Hard Landing\n- 판독값: Nz {max_nz}g / Ny {max_ny}g\n- 기준: Nz >= 1.80 or Ny >= 0.45"
+                status, reason = "AMBER", f"Hard Landing\n- Nz: {max_nz}g / Ny: {max_ny}g\n- Limit: Nz >= 1.80 or Ny >= 0.45"
             else:
-                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)\n- 판독값: Nz {max_nz}g / Ny {max_ny}g"
+                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)\n- Nz: {max_nz}g / Ny: {max_ny}g"
 
     elif trigger_code in ["5100", "5200", "5300"]:
         max_vrta = max([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
@@ -151,23 +155,23 @@ async def analyze_report(req: AnalyzeRequest):
         
         if trigger_code in ["5100", "5200"]:
             if max_vrta >= 2.5 or min_vrta <= -1.0:
-                status, reason = "RED", f"Inspection Required: Turbulence/Maneuver\n- 판독값: MAX {max_vrta}g / MIN {min_vrta}g\n- 기준: VRTA >= 2.5g or VRTA <= -1.0g"
+                status, reason = "RED", f"Inspection Required: Turbulence/Maneuver\n- VRTA MAX: {max_vrta}g / MIN: {min_vrta}g\n- Limit: >= 2.5g or <= -1.0g"
             else:
-                status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 판독값: MAX {max_vrta}g / MIN {min_vrta}g"
+                status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- VRTA MAX: {max_vrta}g / MIN: {min_vrta}g"
         elif trigger_code == "5300":
             if max_vrta >= 2.0 or min_vrta <= 0.0:
-                 status, reason = "RED", f"Inspection Required: Turbulence/Maneuver (Flaps Ext)\n- 판독값: MAX {max_vrta}g / MIN {min_vrta}g\n- 기준: VRTA >= 2.0g or VRTA <= 0.0g"
+                 status, reason = "RED", f"Inspection Required: Turbulence/Maneuver (Flaps Ext)\n- VRTA MAX: {max_vrta}g / MIN: {min_vrta}g\n- Limit: >= 2.0g or <= 0.0g"
             else:
-                 status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 판독값: MAX {max_vrta}g / MIN {min_vrta}g"
+                 status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- VRTA MAX: {max_vrta}g / MIN: {min_vrta}g"
 
     elif trigger_code in ["5600", "5700"]:
         max_lata = max([v.get("LATA", 0) for v in kpi_data.values()]) if kpi_data else 0
         if max_lata > 0.41:
-            status, reason = "RED", f"Severe High Lateral\n- 판독값: LATA {max_lata}g (LIMIT: > 0.41g)"
+            status, reason = "RED", f"Severe High Lateral\n- LATA: {max_lata}g / Limit: > 0.41g"
         elif max_lata >= 0.35:
-            status, reason = "AMBER", f"High Lateral\n- 판독값: LATA {max_lata}g (LIMIT: >= 0.35g)"
+            status, reason = "AMBER", f"High Lateral\n- LATA: {max_lata}g / Limit: >= 0.35g"
         else:
-            status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 판독값: LATA {max_lata}g"
+            status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- LATA: {max_lata}g"
     else:
         status = "UNKNOWN"
         reason = f"분석 불가 (코드 매칭 실패)"
@@ -191,7 +195,7 @@ async def extract_text_from_image(file: UploadFile = File(...)):
     if not GEMINI_API_KEY: return {"error": "API Key 미설정"}
     try:
         content = await file.read()
-        model = genai.GenerativeModel('gemini-flash-lite-latest') 
+        model = genai.GenerativeModel('gemini-1.5-flash-latest') 
         image_part = {"mime_type": file.content_type or "image/jpeg", "data": content}
         prompt = "이 이미지는 항공기 정비용 Load Report 영수증입니다. 인쇄된 모든 텍스트를 줄바꿈을 유지하여 정확하게 추출해주세요. 다른 설명 없이 텍스트만 반환하세요."
         response = await model.generate_content_async([prompt, image_part])
