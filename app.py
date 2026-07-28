@@ -4,9 +4,9 @@ import re
 import io
 from PIL import Image
 import google.generativeai as genai
-from fastapi import FastAPI, UploadFile, File, Body
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -24,8 +24,13 @@ if GEMINI_API_KEY:
 
 @app.get("/")
 async def serve_frontend():
-    # 사용자가 메인 주소로 접속하면 templates/index.html 파일을 보여줍니다.
-    return FileResponse("templates/index.html")
+    # 💡 절대 실패하지 않는 화면 접속 라우터 (폴더 유무 상관없이 무조건 찾아줌)
+    if os.path.exists("templates/index.html"):
+        return FileResponse("templates/index.html")
+    elif os.path.exists("index.html"):
+        return FileResponse("index.html")
+    else:
+        return HTMLResponse("<h1>화면 파일을 찾을 수 없습니다. 깃허브에 index.html 파일이 있는지 확인해주세요.</h1>")
 
 class AnalyzeRequest(BaseModel):
     text: str
@@ -71,7 +76,7 @@ async def analyze_report(req: AnalyzeRequest):
     gw_lbs = 0
     mlw_lbs = 0
     
-    # 1. 파싱 (CEO vs NEO 구별 및 데이터 추출)
+    # 1. 파싱 (데이터 추출)
     for line in lines:
         if "HL" in line:
             parts = line.split()
@@ -92,10 +97,9 @@ async def analyze_report(req: AnalyzeRequest):
                 try:
                     gw_value = int(parts[5]) 
                     gw_lbs = gw_value * 100
-                except:
-                    pass
+                except: pass
 
-        # NEO 기종 파싱 (U1, U2)
+        # NEO 기종 파싱
         elif line.startswith("U1") or line.startswith("U2"):
             fleet_type = "NEO"
             parts = line.split()
@@ -107,7 +111,7 @@ async def analyze_report(req: AnalyzeRequest):
                     }
                 except: pass
 
-        # CEO 기종 파싱 (S3, T3, E1)
+        # CEO 기종 파싱 (S3, S4, T3, T4, E1)
         elif line.startswith("S3") or line.startswith("T3") or line.startswith("S4") or line.startswith("T4"):
             if fleet_type == "UNKNOWN": fleet_type = "CEO"
             parts = line.split()
@@ -125,18 +129,15 @@ async def analyze_report(req: AnalyzeRequest):
     if fleet_type == "UNKNOWN" and trigger_code != "UNKNOWN":
         fleet_type = "CEO" 
 
-    # MLW 설정 (고정 상수)
     mlw_lbs = 166448 if fleet_type == "CEO" else 174606
-    
     status = "UNKNOWN"
     reason = "판별 로직 오류"
 
     if trigger_code.startswith("4"):
         if fleet_type == "CEO":
             max_vrta = max([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
+            is_overweight = trigger_code in ["4800", "4900"]
             
-            # CEO의 경우 파싱된 GW와 고정된 MLW(166,448)를 수학적으로 비교
-            is_overweight = gw_lbs > mlw_lbs
             limit_amber = 1.7 if is_overweight else 2.6
             limit_red = 2.6 if is_overweight else 2.86
             weight_str = f"Overweight [GW({gw_lbs:,} lbs) > MLW({mlw_lbs:,} lbs)]" if is_overweight else f"Normal Weight [GW({gw_lbs:,} lbs) <= MLW({mlw_lbs:,} lbs)]"
@@ -148,7 +149,7 @@ async def analyze_report(req: AnalyzeRequest):
             else:
                 status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)\n- 적용기준: {weight_str}"
 
-        else:
+        else: # NEO
             max_nz = max([v.get("Nz_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
             max_ny = max([v.get("Ny_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
 
@@ -163,12 +164,12 @@ async def analyze_report(req: AnalyzeRequest):
         max_vrta = max([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
         min_vrta = min([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
         
-        if trigger_code in ["5100", "5200"]: # Clean Config
+        if trigger_code in ["5100", "5200"]:
             if max_vrta >= 2.5 or min_vrta <= -1.0:
                 status, reason = "RED", f"Inspection Required: Turbulence/Maneuver [VRTA({max_vrta}g) >= 2.5g or VRTA({min_vrta}g) <= -1.0g]"
             else:
                 status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)"
-        elif trigger_code == "5300": # Flaps Extended
+        elif trigger_code == "5300":
             if max_vrta >= 2.0 or min_vrta <= 0.0:
                  status, reason = "RED", f"Inspection Required: Turbulence/Maneuver (Flaps Ext) [VRTA({max_vrta}g) >= 2.0g or VRTA({min_vrta}g) <= 0.0g]"
             else:
@@ -182,7 +183,6 @@ async def analyze_report(req: AnalyzeRequest):
             status, reason = "AMBER", f"High Lateral [LATA({max_lata}g) >= 0.35g]"
         else:
             status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)"
-
     else:
         status = "RED"
         reason = f"알 수 없는 Trigger Code ({trigger_code}) 입니다. 매뉴얼을 직접 확인하세요."
