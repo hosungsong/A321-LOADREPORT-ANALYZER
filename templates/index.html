@@ -10,7 +10,7 @@
     
     <style>
         body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #1f2937; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
         h1 { color: #1e3a8a; text-align: center; border-bottom: 2px solid #e5e7eb; padding-bottom: 15px; font-size: 26px; font-weight: 700; }
         .subtitle { text-align: center; color: #6b7280; margin-bottom: 24px; font-size: 15px; }
         
@@ -27,7 +27,8 @@
         .btn-ocr { background-color: #10b981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); }
         .btn-ocr:hover { background-color: #059669; }
         .btn-reset { background-color: #6b7280; padding: 12px; font-size: 14px; margin-top: 10px; box-shadow: none; }
-        
+        .btn-reset:hover { background-color: #4b5563; }
+
         .result-section { display: none; margin-top: 40px; border-top: 2px dashed #d1d5db; padding-top: 30px; }
         .status-box { padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 24px; color: white; font-size: 26px; font-weight: 800; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .status-GREEN { background-color: #10b981; }
@@ -43,7 +44,6 @@
         svg { max-width: 100%; height: auto; font-family: 'Inter', Arial, sans-serif; font-size: 11px; }
         svg .box { fill: #fef9c3; stroke: #374151; stroke-width: 1.5; }
         svg .path { fill: none; stroke: #6b7280; stroke-width: 2; }
-        /* 선이 두꺼워져도 화살표 대가리가 커지지 않도록 고정 */
         svg .path.active { stroke: #ef4444; stroke-width: 3.5; }
         svg .box.active-green { fill: #10b981; stroke: #000; stroke-width: 3; }
         svg .box.active-amber { fill: #f59e0b; stroke: #000; stroke-width: 3; }
@@ -82,92 +82,120 @@
             </div>
 
             <h3 style="color: #1e3a8a; text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 15px;" id="chartTitle">📊 분석 그래프</h3>
-            <div class="chart-container">
+            <div class="chart-container" id="chartContainer">
                 <canvas id="limitChart"></canvas>
             </div>
 
             <h3 style="color: #1e3a8a; text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 15px;">🔀 Decision Flow Chart (AMM 매뉴얼 기준)</h3>
             
-            <!-- 1. CEO Flowchart -->
             <div id="ceoFlowchartArea" class="svg-flowchart-container">
                 <svg width="850" height="450" viewBox="0 0 850 450">
                     <defs>
-                        <!-- markerUnits="userSpaceOnUse" 로 화살표 크기 절대 고정 -->
-                        <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
-                        <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
+                        <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
+                        <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
                     </defs>
                     <polygon id="ceo-gw" class="box" points="425,20 525,70 425,120 325,70" />
                     <text x="425" y="75" text-anchor="middle" class="text-black">GW &le; MLW</text>
+                    
                     <polygon id="ceo-v26" class="box" points="250,170 350,220 250,270 150,220" />
                     <text x="250" y="225" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
+                    
                     <polygon id="ceo-v17" class="box" points="600,170 700,220 600,270 500,220" />
                     <text x="600" y="225" text-anchor="middle" class="text-black">VRTA &ge; 1.7 g</text>
+
                     <polygon id="ceo-v286" class="box" points="150,300 230,340 150,380 70,340" />
                     <text x="150" y="345" text-anchor="middle" class="text-black">VRTA &ge; 2.86 g</text>
+
                     <polygon id="ceo-v26ow" class="box" points="500,300 580,340 500,380 420,340" />
                     <text x="500" y="345" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
 
                     <rect id="ceo-nms1" class="box" x="290" y="320" width="130" height="40" />
                     <text x="355" y="345" text-anchor="middle" class="text-black" id="ceo-nms1-txt">NO MORE STEPS</text>
+                    
                     <rect id="ceo-nms2" class="box" x="650" y="320" width="130" height="40" />
                     <text x="715" y="345" text-anchor="middle" class="text-black" id="ceo-nms2-txt">NO MORE STEPS</text>
 
                     <rect id="ceo-shl" class="box" x="10" y="400" width="130" height="40" />
                     <text x="75" y="415" text-anchor="middle" class="text-black" id="ceo-shl-txt"><tspan x="75" dy="0">SEVERE</tspan><tspan x="75" dy="14">HARD LANDING</tspan></text>
+
                     <rect id="ceo-hl" class="box" x="150" y="400" width="130" height="40" />
                     <text x="215" y="425" text-anchor="middle" class="text-black" id="ceo-hl-txt">HARD LANDING</text>
+
                     <rect id="ceo-shol" class="box" x="360" y="400" width="140" height="40" />
                     <text x="430" y="415" text-anchor="middle" class="text-black" id="ceo-shol-txt"><tspan x="430" dy="0">SEVERE HARD</tspan><tspan x="430" dy="14">OVERWEIGHT</tspan></text>
+
                     <rect id="ceo-hol" class="box" x="510" y="400" width="140" height="40" />
                     <text x="580" y="415" text-anchor="middle" class="text-black" id="ceo-hol-txt"><tspan x="580" dy="0">HARD</tspan><tspan x="580" dy="14">OVERWEIGHT</tspan></text>
 
                     <path id="ceo-p1" class="path" d="M 325 70 L 250 70 L 250 170" marker-end="url(#arrow-gray)" />
+                    <text x="290" y="60" class="text-black">YES</text>
                     <path id="ceo-p2" class="path" d="M 525 70 L 600 70 L 600 170" marker-end="url(#arrow-gray)" />
+                    <text x="560" y="60" class="text-black">NO</text>
                     <path id="ceo-p3" class="path" d="M 150 220 L 150 300" marker-end="url(#arrow-gray)" />
+                    <text x="130" y="260" class="text-black">YES</text>
                     <path id="ceo-p4" class="path" d="M 350 220 L 355 220 L 355 320" marker-end="url(#arrow-gray)" />
+                    <text x="365" y="215" class="text-black">NO</text>
                     <path id="ceo-p5" class="path" d="M 500 220 L 500 300" marker-end="url(#arrow-gray)" />
+                    <text x="480" y="260" class="text-black">YES</text>
                     <path id="ceo-p6" class="path" d="M 700 220 L 715 220 L 715 320" marker-end="url(#arrow-gray)" />
+                    <text x="725" y="215" class="text-black">NO</text>
                     <path id="ceo-p7" class="path" d="M 70 340 L 75 340 L 75 400" marker-end="url(#arrow-gray)" />
+                    <text x="60" y="330" class="text-black">YES</text>
                     <path id="ceo-p8" class="path" d="M 230 340 L 215 340 L 215 400" marker-end="url(#arrow-gray)" />
+                    <text x="240" y="330" class="text-black">NO</text>
                     <path id="ceo-p9" class="path" d="M 420 340 L 430 340 L 430 400" marker-end="url(#arrow-gray)" />
+                    <text x="410" y="330" class="text-black">YES</text>
                     <path id="ceo-p10" class="path" d="M 580 340 L 580 400" marker-end="url(#arrow-gray)" />
+                    <text x="590" y="330" class="text-black">NO</text>
                 </svg>
             </div>
 
-            <!-- 2. NEO Flowchart -->
             <div id="neoFlowchartArea" class="svg-flowchart-container">
                 <svg width="900" height="550" viewBox="0 0 900 550">
                     <defs>
-                        <marker id="arrow-gray-neo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
-                        <marker id="arrow-red-neo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
+                        <marker id="arrow-gray-neo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
+                        <marker id="arrow-red-neo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
                     </defs>
                     
                     <polygon id="neo-dmu" class="box" points="450,10 700,60 450,110 200,60" />
                     <text x="450" y="55" text-anchor="middle" class="text-black"><tspan x="450" dy="0">DMU LOAD REPORT 15</tspan><tspan x="450" dy="14">TRIGGER CODE 4XXX OR 7XXX AVAILABLE?</tspan></text>
+
                     <rect id="neo-c4" class="box" x="290" y="150" width="120" height="40" />
                     <text x="350" y="175" text-anchor="middle" class="text-black">CODE 4XXX</text>
+
                     <rect id="neo-c7" class="box" x="490" y="150" width="120" height="40" />
                     <text x="550" y="175" text-anchor="middle" class="text-black">CODE 7XXX</text>
+
                     <rect id="neo-nzge" class="box" x="290" y="230" width="120" height="40" />
                     <text x="350" y="255" text-anchor="middle" class="text-black">Nz kpi &ge; 0.8</text>
+                    
                     <rect id="neo-nzlt" class="box" x="490" y="230" width="120" height="40" />
                     <text x="550" y="255" text-anchor="middle" class="text-black">Nz kpi &lt; 0.8</text>
+
                     <rect id="neo-sev" class="box" x="250" y="310" width="200" height="40" />
                     <text x="350" y="335" text-anchor="middle" class="text-black">FIND THE HARD LANDING SEVERITY.</text>
 
                     <rect id="neo-b1" class="box" x="10" y="400" width="210" height="70" />
                     <text x="115" y="420" text-anchor="middle" class="text-black" id="neo-b1-txt"><tspan x="115" dy="0">4510, 4610 SEVERE HARD LANDING</tspan><tspan x="115" dy="14">Nz kpi &gt; 2.06 OR Ny kpi &ge; 0.5</tspan></text>
+
                     <rect id="neo-b2" class="box" x="230" y="400" width="210" height="70" />
                     <text x="335" y="420" text-anchor="middle" class="text-black" id="neo-b2-txt"><tspan x="335" dy="0">4410, 4310 SEVERE HARD</tspan><tspan x="335" dy="14">OVERWEIGHT LANDING</tspan><tspan x="335" dy="14">Nz kpi &gt; 2.06 OR Ny kpi &ge; 0.5</tspan></text>
+
                     <rect id="neo-b3" class="box" x="450" y="400" width="210" height="70" />
                     <text x="555" y="420" text-anchor="middle" class="text-black" id="neo-b3-txt"><tspan x="555" dy="0">4520, 4620 HARD LANDING</tspan><tspan x="555" dy="14">1.80 &lt; Nz kpi &le; 2.06 OR</tspan><tspan x="555" dy="14">0.45 &le; Ny kpi &lt; 0.5</tspan></text>
+
                     <rect id="neo-b4" class="box" x="670" y="400" width="210" height="70" />
                     <text x="775" y="420" text-anchor="middle" class="text-black" id="neo-b4-txt"><tspan x="775" dy="0">4420, 4320 HARD</tspan><tspan x="775" dy="14">OVERWEIGHT LANDING</tspan><tspan x="775" dy="14">1.80 &lt; Nz kpi &le; 2.06 OR 0.45 &le; Ny kpi &lt; 0.5</tspan></text>
+
                     <rect id="neo-b-green" class="box" x="350" y="490" width="200" height="40" style="display:none;" />
                     <text x="450" y="515" text-anchor="middle" class="text-black" id="neo-b-green-txt" style="display:none;">LIMIT NOT EXCEEDED (GREEN)</text>
 
                     <path id="neo-p1" class="path path-neo" d="M 450 110 L 450 130 L 350 130 L 350 150" marker-end="url(#arrow-gray-neo)" />
+                    <text x="400" y="125" class="text-black">YES</text>
+                    
                     <path id="neo-p2" class="path path-neo" d="M 450 110 L 450 130 L 550 130 L 550 150" marker-end="url(#arrow-gray-neo)" />
+                    <text x="500" y="125" class="text-black">YES</text>
+
                     <path id="neo-p3" class="path path-neo" d="M 350 190 L 350 230" marker-end="url(#arrow-gray-neo)" />
                     <path id="neo-p4" class="path path-neo" d="M 550 190 L 550 230" marker-end="url(#arrow-gray-neo)" />
                     <path id="neo-p5" class="path path-neo" d="M 350 270 L 350 310" marker-end="url(#arrow-gray-neo)" />
@@ -180,12 +208,11 @@
                 </svg>
             </div>
 
-            <!-- 3. Turb Flowchart -->
             <div id="turbFlowchartArea" class="svg-flowchart-container">
                 <svg width="600" height="250" viewBox="0 0 600 250">
                     <defs>
-                        <marker id="arrow-gray-turb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
-                        <marker id="arrow-red-turb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
+                        <marker id="arrow-gray-turb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
+                        <marker id="arrow-red-turb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
                     </defs>
                     <polygon id="turb-d1" class="box" points="300,20 420,70 300,120 180,70" />
                     <text x="300" y="65" text-anchor="middle" class="text-black">VRTA LIMIT</text>
@@ -193,20 +220,23 @@
 
                     <rect id="turb-red" class="box" x="50" y="150" width="200" height="40" />
                     <text x="150" y="175" text-anchor="middle" class="text-black" id="turb-red-txt">INSPECTION REQUIRED</text>
+
                     <rect id="turb-green" class="box" x="350" y="150" width="200" height="40" />
                     <text x="450" y="175" text-anchor="middle" class="text-black" id="turb-green-txt">NO MORE STEPS</text>
 
-                    <path id="turb-p1" class="path path-turb" d="M 180 70 L 150 70 L 150 150" marker-end="url(#arrow-gray-turb)" />
-                    <path id="turb-p2" class="path path-turb" d="M 420 70 L 450 70 L 450 150" marker-end="url(#arrow-gray-turb)" />
+                    <path id="turb-p1" class="path path-turb" d="M 180 70 L 150 70 L 150 150" marker-end="url(#arrow-gray)" />
+                    <text x="160" y="60" class="text-black">YES</text>
+                    
+                    <path id="turb-p2" class="path path-turb" d="M 420 70 L 450 70 L 450 150" marker-end="url(#arrow-gray)" />
+                    <text x="430" y="60" class="text-black">NO</text>
                 </svg>
             </div>
 
-            <!-- 4. Lat Flowchart -->
             <div id="latFlowchartArea" class="svg-flowchart-container">
                 <svg width="600" height="400" viewBox="0 0 600 400">
                     <defs>
-                        <marker id="arrow-gray-lat" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
-                        <marker id="arrow-red-lat" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
+                        <marker id="arrow-gray-lat" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
+                        <marker id="arrow-red-lat" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
                     </defs>
                     <polygon id="lat-d1" class="box" points="300,20 420,80 300,140 180,80" />
                     <text x="300" y="85" text-anchor="middle" class="text-black">LATA > 0.41 g</text>
@@ -215,15 +245,21 @@
 
                     <rect id="lat-red" class="box" x="50" y="170" width="140" height="40" />
                     <text x="120" y="185" text-anchor="middle" class="text-black" id="lat-red-txt"><tspan x="120" dy="0">SEVERE HIGH</tspan><tspan x="120" dy="14">LATERAL</tspan></text>
+
                     <rect id="lat-amber" class="box" x="180" y="320" width="140" height="40" />
                     <text x="250" y="345" text-anchor="middle" class="text-black" id="lat-amber-txt">HIGH LATERAL</text>
+                    
                     <rect id="lat-green" class="box" x="420" y="320" width="140" height="40" />
                     <text x="490" y="345" text-anchor="middle" class="text-black" id="lat-green-txt">NO MORE STEPS</text>
 
-                    <path id="lat-p1" class="path path-lat" d="M 180 80 L 120 80 L 120 170" marker-end="url(#arrow-gray-lat)" />
-                    <path id="lat-p2" class="path path-lat" d="M 420 80 L 450 80 L 450 150 L 400 150 L 400 180" marker-end="url(#arrow-gray-lat)" />
-                    <path id="lat-p3" class="path path-lat" d="M 280 240 L 250 240 L 250 320" marker-end="url(#arrow-gray-lat)" />
-                    <path id="lat-p4" class="path path-lat" d="M 520 240 L 550 240 L 550 300 L 490 300 L 490 320" marker-end="url(#arrow-gray-lat)" />
+                    <path id="lat-p1" class="path path-lat" d="M 180 80 L 120 80 L 120 170" marker-end="url(#arrow-gray)" />
+                    <text x="140" y="70" class="text-black">YES</text>
+                    <path id="lat-p2" class="path path-lat" d="M 420 80 L 450 80 L 450 150 L 400 150 L 400 180" marker-end="url(#arrow-gray)" />
+                    <text x="430" y="70" class="text-black">NO</text>
+                    <path id="lat-p3" class="path path-lat" d="M 280 240 L 250 240 L 250 320" marker-end="url(#arrow-gray)" />
+                    <text x="260" y="230" class="text-black">YES</text>
+                    <path id="lat-p4" class="path path-lat" d="M 520 240 L 550 240 L 550 300 L 490 300 L 490 320" marker-end="url(#arrow-gray)" />
+                    <text x="530" y="230" class="text-black">NO</text>
                 </svg>
             </div>
         </div>
@@ -266,9 +302,11 @@
                         if(customLabel) {
                             ctx.font = 'bold 15px Arial';
                             ctx.textAlign = 'center';
+                            
                             ctx.strokeStyle = 'white';
                             ctx.lineWidth = 4;
                             ctx.strokeText(customLabel, x, y - 18);
+                            
                             ctx.fillStyle = '#111827';
                             ctx.fillText(customLabel, x, y - 18);
                         }
@@ -339,34 +377,19 @@
             const btn = document.getElementById('analyzeBtn');
             btn.innerText = "분석 중..."; btn.disabled = true;
 
-            // Mock Data for frontend preview testing (so the preview doesn't break if server is down)
-            const mockResponse = {
-                fleet_type: textData.includes("NEO") || textData.includes("8534") ? "NEO" : "CEO",
-                aircraft_id: textData.includes("8534") ? "HL8534" : "UNKNOWN",
-                trigger_code: textData.includes("5100") ? "5100" : (textData.includes("4520") ? "4520" : "4510"),
-                status: "RED",
-                reason: "Mock Data Reason",
-                kpi_data: { Turb: { VRTA_MAX: 2.8, VRTA_MIN: -1.2 }, U1: { Nz_kpi: 2.1, Ny_kpi: 0.6 } },
-                gw_lbs: 150000,
-                mlw_lbs: 174606
-            };
-
             try {
-                // In a real environment, this calls the python backend.
                 const response = await fetch('/analyze', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: textData })
                 });
                 const result = await response.json();
                 if (result.error) {
-                    showMessage("서버 오류: " + result.error);
+                    showMessage("서버 분석 오류: " + result.error);
                 } else {
                     displayResult(result);
                 }
             } catch (error) { 
-                // Fallback to mock data for preview purposes
-                displayResult(mockResponse);
-                showMessage("서버 통신 실패. 임시 미리보기 데이터로 표시합니다."); 
+                showMessage("서버 통신 오류가 발생했습니다. 백엔드가 실행 중인지 확인하세요."); 
             } finally { 
                 btn.innerText = "데이터 분석 (Analyze)"; btn.disabled = false; 
             }
@@ -375,7 +398,11 @@
         function displayResult(data) {
             document.getElementById('resultSection').style.display = 'block';
             document.getElementById('fleetType').innerText = data.fleet_type;
-            document.getElementById('acId').innerText = data.aircraft_id;
+            
+            // 기종이 없을 경우 방어 코드 추가 (괄호 텅 빔 방지)
+            const tailNumber = data.aircraft_id && data.aircraft_id !== "UNKNOWN" ? data.aircraft_id : "기번 확인불가";
+            document.getElementById('acId').innerText = tailNumber;
+            
             document.getElementById('triggerCode').innerText = data.trigger_code;
             document.getElementById('reasonText').innerText = data.reason;
 
@@ -411,6 +438,9 @@
             let fleet = data.fleet_type;
             let gw = data.gw_lbs;
             let mlw = data.mlw_lbs;
+            
+            // 기본 캔버스 높이 설정
+            document.getElementById('chartContainer').style.height = '450px';
 
             if (fleet === 'CEO' && code.startsWith('4')) {
                 document.getElementById('chartTitle').innerText = '📊 CEO Hard Landing Limit (Weight vs VRTA)';
@@ -486,14 +516,16 @@
                         }
                     };
                 } else {
-                    // 1D 가로 수평선 차트 (난기류 5000번대)
+                    // 난기류 1D 수평선 차트 완벽 구현 (높이를 줄여서 진짜 띠 모양으로 변경)
+                    document.getElementById('chartContainer').style.height = '150px'; // 높이를 대폭 줄임
+                    
                     let isClean = (code === '5100' || code === '5200');
                     document.getElementById('chartTitle').innerText = isClean ? '📊 Turbulence Limit (CLEAN CONFIGURATION)' : '📊 Turbulence Limit (FLAPS AND/OR SLATS EXTENDED)';
                     
                     let minLim = isClean ? -1.0 : 0.0;
                     let maxLim = isClean ? 2.5 : 2.0;
-                    let tMax = 0, tMin = 0;
 
+                    let tMax = 0, tMin = 0;
                     if (data.kpi_data && data.kpi_data.Turb) {
                         tMax = data.kpi_data.Turb.VRTA_MAX;
                         tMin = data.kpi_data.Turb.VRTA_MIN;
@@ -516,15 +548,16 @@
                             annotation: { 
                                 drawTime: 'beforeDatasetsDraw', 
                                 annotations: { 
-                                    boxLeftRed: { type: 'box', xMin: -4.0, xMax: minLim, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
-                                    boxRightRed: { type: 'box', xMin: maxLim, xMax: 5.0, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
-                                    boxGreen: { type: 'box', xMin: minLim, xMax: maxLim, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(16, 185, 129, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
+                                    // 얇은 가로 띠 형태로 표시하기 위해 yMin 0.4, yMax 0.6 설정
+                                    boxLeftRed: { type: 'box', xMin: -3.0, xMax: minLim, yMin: 0.4, yMax: 0.6, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxRightRed: { type: 'box', xMin: maxLim, xMax: 4.5, yMin: 0.4, yMax: 0.6, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxGreen: { type: 'box', xMin: minLim, xMax: maxLim, yMin: 0.4, yMax: 0.6, backgroundColor: 'rgba(16, 185, 129, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
                                 } 
                             } 
                         },
                         scales: { 
                             x: { type: 'linear', position: 'bottom', title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}}, min: -2.0, max: 3.5 }, 
-                            y: { display: false, min: 0, max: 1.0 } 
+                            y: { display: false, min: 0, max: 1.0 } // 1D 느낌을 위해 Y축 완전 숨김
                         }
                     };
                 }
