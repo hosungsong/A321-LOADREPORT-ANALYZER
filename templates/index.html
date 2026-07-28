@@ -10,7 +10,7 @@
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         h1 { color: #0033a0; text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px; font-size: 24px;}
         .subtitle { text-align: center; color: #666; margin-bottom: 20px; font-size: 14px; }
         
@@ -176,11 +176,11 @@
             else if (data.status.includes('AMBER')) statusBox.classList.add('status-AMBER');
             else statusBox.classList.add('status-GREEN');
             
-            if (data.status === 'GREEN') statusBox.innerText = "상태: GREEN (정상 착륙)";
-            else statusBox.innerText = "상태: " + data.status;
+            if (data.status === 'GREEN') statusBox.innerText = "분석 결과: GREEN ZONE (정상 착륙 / 한계치 이내)";
+            else statusBox.innerText = "분석 결과: " + data.status + " ZONE";
 
             let maxNz = 0; let maxNy = 0;
-            // S3, T3의 첫번째 값(VRTA)만 읽어서 맥스값 계산
+            // S3, T3의 첫번째 값(VRTA)만 읽어서 맥스값 계산 (E1 배제)
             if (data.fleet_type === 'CEO' && data.trigger_code.startsWith('4')) {
                 let s3 = data.kpi_data['S3'] ? data.kpi_data['S3'].VRTA : 0;
                 let t3 = data.kpi_data['T3'] ? data.kpi_data['T3'].VRTA : 0;
@@ -292,64 +292,86 @@
         }
 
         function drawFlowchart(code, status, fleetType, gw, mlw) {
-            let graphDefinition = `graph TD\n`;
             let activeLinks = [];
+            let graphDefinition = '';
             
             if (code.startsWith('4') && fleetType === 'CEO') {
                 const isOverweight = gw > mlw;
+                // 매뉴얼의 전체 박스를 빠짐없이 그리고, 선을 직각(Orthogonal)으로 설정합니다.
+                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
                 
-                // 매뉴얼 사진과 동일한 구조 작성 (마름모 모양과 영문 그대로 적용)
-                graphDefinition += `
-                    A{"GW <= MLW"}
-                    B{"VRTA >= 2.6 g"}
-                    C{"VRTA >= 2.86 g"}
-                    D["NO MORE STEPS"]
-                    E["DO THE INSPECTION WITH THE STEPS FOR<br>A HARD LANDING"]
-                    F["DO THE INSPECTION WITH THE STEPS FOR<br>A SEVERE HARD LANDING"]
-                    G{"VRTA >= 1.7 g"}
-                    H{"VRTA >= 2.6 g"}
-                    I["NO MORE STEPS"]
-                    J["DO THE INSPECTION WITH THE STEPS<br>FOR A HARD OVERWEIGHT-LANDING"]
-                    K["DO THE INSPECTION WITH THE STEPS FOR<br>A SEVERE HARD OVERWEIGHT-LANDING"]
+                graphDefinition += `  T1([PRIMARY TRIGGER<br>FLIGHT CREW REPORT OF A HARD<br>LANDING OR A HARD OVERWEIGHT<br>LANDING ON THE MLG ONLY])\n`;
+                graphDefinition += `  T2([ALTERNATIVE TRIGGER<br>LOAD REPORT 15 GENERATED<br>WITH TRIGGER CODE 4XXX])\n`;
+                graphDefinition += `  D1{DMU LOAD REPORT 15<br>AVAILABLE WITH TRIGGER CODE<br>4XXX OR DFDR/QAR READ-OUT<br>AVAILABLE?}\n`;
+                graphDefinition += `  B1[DO THE INSPECTION WITH THE<br>STEPS FOR A SEVERE HARD<br>LANDING OR A SEVERE HARD<br>OVERWEIGHT-LANDING]\n`;
+                graphDefinition += `  B2[IF YOU DO NOT FIND DAMAGE,<br>THE AIRCRAFT CAN RETURN TO<br>SERVICE FOR A TEMPORARY<br>PERIOD OF 200 FLIGHT<br>CYCLES/30 DAYS]\n`;
+                graphDefinition += `  B3[GET THE IMPACT PARAMETERS FROM LOAD<br>REPORT 15 OR QAR OR DFDR AND COMPARE THE VALUES]\n`;
+                
+                graphDefinition += `  D2{"GW <= MLW"}\n`;
+                graphDefinition += `  D3{"VRTA >= 2.6 g"}\n`;
+                graphDefinition += `  D4{"VRTA >= 1.7 g"}\n`;
+                graphDefinition += `  B4[NO MORE STEPS]\n`;
+                graphDefinition += `  B5[NO MORE STEPS]\n`;
+                graphDefinition += `  D5{"VRTA >= 2.86 g"}\n`;
+                graphDefinition += `  D6{"VRTA >= 2.6 g"}\n`;
+                graphDefinition += `  B6[DO THE INSPECTION WITH<br>THE STEPS FOR A SEVERE<br>HARD LANDING]\n`;
+                graphDefinition += `  B7[DO THE INSPECTION<br>WITH THE STEPS FOR<br>A HARD LANDING]\n`;
+                graphDefinition += `  B8[DO THE INSPECTION<br>WITH THE STEPS FOR<br>A SEVERE HARD<br>OVERWEIGHT-LANDING]\n`;
+                graphDefinition += `  B9[DO THE INSPECTION<br>WITH THE STEPS<br>FOR A HARD<br>OVERWEIGHT LANDING]\n`;
+                graphDefinition += `  B10[ - SEND THE RAW DATA FROM THE DFDR OR FROM THE QAR TO AIRBUS.<br> - RECORD THE DAMAGE THAT YOU FIND AND/OR THE INSPECTION RESULTS<br>   IN THE PROFORMA AND SEND IT TO AIRBUS.<br> - CONTACT AIRBUS FOR TECHNICAL INSTRUCTIONS.<br> - OBEY THE AIRBUS INSTRUCTIONS BEFORE THE NEXT FLIGHT.]\n`;
 
-                    A -- YES --> B
-                    A -- NO --> G
-                    B -- NO --> D
-                    B -- YES --> C
-                    C -- NO --> E
-                    C -- YES --> F
-                    G -- NO --> I
-                    G -- YES --> H
-                    H -- NO --> J
-                    H -- YES --> K
-                `;
+                graphDefinition += `  T1 --> D1\n`; // 0
+                graphDefinition += `  D1 -- NO --> B1\n`; // 1
+                graphDefinition += `  B1 --> B2\n`; // 2
+                graphDefinition += `  B2 --> B3\n`; // 3
+                graphDefinition += `  D1 -- YES --> B3\n`; // 4
+                graphDefinition += `  T2 --> B3\n`; // 5
+                graphDefinition += `  T2 --> B1\n`; // 6
+                graphDefinition += `  B3 --> D2\n`; // 7
                 
-                // 경로에 따른 빨간 화살표 및 박스 색상 하이라이트
+                graphDefinition += `  D2 -- YES --> D3\n`; // 8 (Start tracing from here)
+                graphDefinition += `  D2 -- NO --> D4\n`; // 9
+                graphDefinition += `  D3 -- NO --> B4\n`; // 10
+                graphDefinition += `  D3 -- YES --> D5\n`; // 11
+                graphDefinition += `  D4 -- NO --> B5\n`; // 12
+                graphDefinition += `  D4 -- YES --> D6\n`; // 13
+                graphDefinition += `  D5 -- NO --> B7\n`; // 14
+                graphDefinition += `  D5 -- YES --> B6\n`; // 15
+                graphDefinition += `  D6 -- NO --> B9\n`; // 16
+                graphDefinition += `  D6 -- YES --> B8\n`; // 17
+                
+                graphDefinition += `  B6 --> B10\n`; // 18
+                graphDefinition += `  B7 --> B10\n`; // 19
+                graphDefinition += `  B8 --> B10\n`; // 20
+                graphDefinition += `  B9 --> B10\n`; // 21
+
+                // GW <= MLW 부터 판별 루트에 따라 화살표 색상 지정
                 if (!isOverweight) {
                     if (status.includes('GREEN')) {
-                        activeLinks.push(0, 2);
-                        graphDefinition += `style D fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                        activeLinks.push(8, 10);
+                        graphDefinition += `style B4 fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
                     } else if (status.includes('AMBER')) {
-                        activeLinks.push(0, 3, 4);
-                        graphDefinition += `style E fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
+                        activeLinks.push(8, 11, 14, 19);
+                        graphDefinition += `style B7 fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
                     } else if (status.includes('RED')) {
-                        activeLinks.push(0, 3, 5);
-                        graphDefinition += `style F fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                        activeLinks.push(8, 11, 15, 18);
+                        graphDefinition += `style B6 fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
                     }
                 } else {
                     if (status.includes('GREEN')) {
-                        activeLinks.push(1, 6);
-                        graphDefinition += `style I fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                        activeLinks.push(9, 12);
+                        graphDefinition += `style B5 fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
                     } else if (status.includes('AMBER')) {
-                        activeLinks.push(1, 7, 8);
-                        graphDefinition += `style J fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
+                        activeLinks.push(9, 13, 16, 21);
+                        graphDefinition += `style B9 fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
                     } else if (status.includes('RED')) {
-                        activeLinks.push(1, 7, 9);
-                        graphDefinition += `style K fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                        activeLinks.push(9, 13, 17, 20);
+                        graphDefinition += `style B8 fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
                     }
                 }
 
             } else if (code.startsWith('4') && fleetType === 'NEO') {
+                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
                 graphDefinition += `A[Load Report Code: ${code}] --> B{Nz >= 2.06 or Ny >= 0.5?}\n`; 
                 graphDefinition += `B -- Yes --> C[RED ZONE<br>Severe Hard Landing]\n`; 
                 graphDefinition += `B -- No --> D{Nz >= 1.80 or Ny >= 0.45?}\n`; 
@@ -369,6 +391,7 @@
                 }
 
             } else if (code === '5100' || code === '5200') {
+                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
                 graphDefinition += `A[Turbulence Report Code: ${code}] --> B{Clean Config<br>Flaps < 0.5?}\n`; 
                 graphDefinition += `B -- Yes --> C{VRTA <= -1.0g or VRTA >= 2.5g?}\n`; 
                 graphDefinition += `C -- Yes --> D[RED ZONE<br>INSPECTION REQUIRED]\n`; 
@@ -380,6 +403,7 @@
                     activeLinks.push(3); graphDefinition += `style E fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
                 }
             } else if (code === '5300') {
+                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
                 graphDefinition += `A[Turbulence Report Code: ${code}] --> B{Flaps Extended?}\n`; 
                 graphDefinition += `B -- Yes --> C{VRTA <= 0.0g or VRTA >= 2.0g?}\n`; 
                 graphDefinition += `C -- Yes --> D[RED ZONE<br>INSPECTION REQUIRED]\n`; 
@@ -391,6 +415,7 @@
                     activeLinks.push(3); graphDefinition += `style E fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
                 }
             } else if (code === '5600' || code === '5700') {
+                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
                 graphDefinition += `A[High Lateral Code: ${code}] --> B{LATA > 0.41g?}\n`; 
                 graphDefinition += `B -- Yes --> C[RED ZONE<br>Severe Lateral]\n`; 
                 graphDefinition += `B -- No --> D{LATA >= 0.35g?}\n`; 
