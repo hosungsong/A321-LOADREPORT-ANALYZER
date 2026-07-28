@@ -1,12 +1,8 @@
-import os, json, re, smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import os, json, re
 import google.generativeai as genai
 from fastapi import FastAPI, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
-from typing import List
 import io
 from PIL import Image
 
@@ -14,201 +10,153 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-if GEMINI_API_KEY: 
-    genai.configure(api_key=GEMINI_API_KEY)
+if GEMINI_API_KEY: genai.configure(api_key=GEMINI_API_KEY)
 
-APP_DB = {"flights": [], "ataDatabase": [], "actionDatabase": [], "ac": {}, "emails": {}}
-LEARNING_FILE = "learning_dict.json"
-
-# A321 하드랜딩을 위한 기번 DB
 FLEET_DB = {
-    "HL8398": "NEO", "HL8364": "NEO", "HL8356": "NEO", "HL8399": "NEO",
-    "HL8371": "NEO", "HL8395": "NEO", "HL8510": "NEO", "HL8515": "NEO",
+    "HL8071": "CEO", "HL8256": "CEO", "HL8257": "CEO", "HL8267": "CEO", 
+    "HL8364": "NEO", "HL8371": "NEO", "HL8398": "NEO", "HL8399": "NEO", 
+    "HL8356": "NEO", "HL8395": "NEO", "HL8510": "NEO", "HL8515": "NEO"
 }
 
-# 💡 하드랜딩 분석 로직 (AMM 매뉴얼 기반)
+# 기종별 MLW (LBS)
+MLW_DB = {
+    "CEO": 166448,
+    "NEO": 174606
+}
+
 def parse_kpi_value(val_str):
-    try: return int(val_str) / 100.0
-    except ValueError: return 0.0
+    try: return abs(float(val_str)) / 100.0
+    except Exception: return 0.0
 
-def evaluate_landing_severity(nz, ny):
-    if nz >= 2.06 or ny >= 0.50: return "RED", "Severe Hard Landing"
-    elif 1.80 <= nz < 2.06 or 0.45 <= ny < 0.50: return "AMBER", "Hard Landing"
-    else: return "GREEN", "Normal Landing (Limit Not Exceeded)"
-
-def evaluate_in_flight_severity(lata):
-    if lata > 0.41: return "RED", "Severe High Lateral Acceleration"
-    elif 0.35 <= lata <= 0.41: return "AMBER", "High Lateral Acceleration"
-    else: return "GREEN", "Spurious Report (Limit Not Exceeded)"
-
-class AnalyzeRequest(BaseModel):
-    text: str
-
-# --- 기존 DB 로드 관련 함수 유지 ---
-def load_learning_dict():
-    if os.path.exists(LEARNING_FILE):
-        with open(LEARNING_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def save_learning_dict(data):
-    with open(LEARNING_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-def apply_learning(text, l_dict):
-    if not text: return text
-    for wrong, right in l_dict.items():
-        if not wrong: continue
-        pattern = re.compile(re.escape(wrong), re.IGNORECASE)
-        text = pattern.sub(right, text)
-    return text
-
-def reload_db_from_lines(lines):
-    APP_DB["flights"].clear()
-    APP_DB["ataDatabase"].clear()
-    APP_DB["actionDatabase"].clear()
-    APP_DB["ac"].clear()
-    APP_DB["emails"].clear()
+def evaluate_severity(code, fleet_type, max_nz, max_ny, max_e1, gw_lbs, mlw_lbs):
+    status = "UNKNOWN"
+    reason_text = "데이터를 분석할 수 없습니다."
     
-    for idx, line in enumerate(lines):
-        rowNum = idx + 1
-        parts = [p.strip() for p in line.split(',')]
-        if len(parts) >= 2:
-            type_ = parts[0].upper()
-            if type_ == 'ATA':
-                key = ",".join(parts[2:]).upper() if len(parts) > 2 else ""
-                if key and parts[1] and key != 'KEYWORD':
-                    APP_DB["ataDatabase"].append({"keyword": key, "code": parts[1], "row": rowNum})
-            elif type_ == 'NEF' and len(parts) >= 3:
-                key = ",".join(parts[2:]).upper()
-                APP_DB["actionDatabase"].append({"type": 'NEF', "code": parts[1].upper(), "acType": 'ALL', "keyword": key, "row": rowNum})
-            elif type_ == 'MEL' and len(parts) >= 4:
-                key = ",".join(parts[3:]).upper()
-                APP_DB["actionDatabase"].append({"type": 'MEL', "acType": parts[1].upper(), "code": parts[2].upper(), "keyword": key, "row": rowNum})
-            elif type_ == 'ACTION' and len(parts) >= 3:
-                key = ",".join(parts[2:]).upper()
-                if key and parts[1] and key != 'KEYWORD':
-                    APP_DB["actionDatabase"].append({"type": '', "code": parts[1].upper(), "acType": 'ALL', "keyword": key, "row": rowNum})
-            elif type_ == 'FLIGHT' and len(parts) >= 4:
-                APP_DB["flights"].append({"no": parts[1], "from": parts[2].upper(), "to": parts[3].upper()})
-            elif type_ == 'AC' and len(parts) >= 3:
-                APP_DB["ac"][parts[1]] = parts[2]
-            elif type_ == 'EMAIL' and len(parts) >= 3:
-                APP_DB["emails"][parts[1].upper()] = ",".join(parts[2:]).strip()
-
-@app.on_event("startup")
-def startup_event():
-    if os.path.exists("database.csv"):
-        with open("database.csv", "r", encoding="utf-8-sig") as f:
-            reload_db_from_lines(f.readlines())
-
-@app.get("/")
-async def serve_frontend(): 
-    if os.path.exists("templates/index.html"):
-        return FileResponse("templates/index.html")
-    return FileResponse("index.html")
-
-@app.get("/ping")
-@app.head("/ping")
-@app.head("/")
-async def keep_alive_ping(): return {"status": "awake"}
-
-# 💡 A321 하드랜딩 리포트 분석 엔드포인트
-@app.post("/analyze")
-async def analyze_data(req: AnalyzeRequest):
-    report_text = req.text
-    result = {
-        "aircraft_id": "Unknown", "fleet_type": "Unknown",
-        "trigger_code": "Unknown", "status": "UNKNOWN", "reason": "분석 불가",
-        "kpi_data": {}
-    }
-
-    # 기번 추출
-    ac_match = re.search(r'(HL\d{4})', report_text)
-    if ac_match:
-        result["aircraft_id"] = ac_match.group(1)
-        result["fleet_type"] = FLEET_DB.get(result["aircraft_id"], "CEO")
-
-    # 코드 추출
-    code_match = re.search(r'CODE.*?(\d{4})', report_text)
-    if code_match: result["trigger_code"] = code_match.group(1)
-
-    code = result["trigger_code"]
-
-    # Landing 파싱
     if code.startswith('4'):
-        u1_match = re.search(r'U1\s+(-?\d{3})\s+(-?\d{3})', report_text)
-        u2_match = re.search(r'U2\s+(-?\d{3})\s+(-?\d{3})', report_text)
-        
-        nz_kpi1, ny_kpi1, nz_kpi2, ny_kpi2 = 0.0, 0.0, 0.0, 0.0
-        if u1_match:
-            nz_kpi1 = parse_kpi_value(u1_match.group(1))
-            ny_kpi1 = parse_kpi_value(u1_match.group(2))
-            result["kpi_data"]["U1"] = {"Nz_kpi": nz_kpi1, "Ny_kpi": ny_kpi1}
+        if fleet_type == "CEO":
+            # 💡 CEO: GW와 MLW 직접 비교 (사용자 요청 로직)
+            is_overweight = gw_lbs > mlw_lbs
+            weight_status = f"GW({gw_lbs:,} lbs) > MLW({mlw_lbs:,} lbs)" if is_overweight else f"GW({gw_lbs:,} lbs) <= MLW({mlw_lbs:,} lbs)"
             
-        if u2_match:
-            nz_kpi2 = parse_kpi_value(u2_match.group(1))
-            ny_kpi2 = parse_kpi_value(u2_match.group(2))
-            result["kpi_data"]["U2"] = {"Nz_kpi": nz_kpi2, "Ny_kpi": ny_kpi2}
-
-        max_nz = max(nz_kpi1, nz_kpi2)
-        max_ny = max(ny_kpi1, ny_kpi2)
-        
-        status, reason = evaluate_landing_severity(max_nz, max_ny)
-        
-        # Spurious 판별 로직 추가
-        if status == "GREEN" and code in ["4510", "4520", "4610", "4620"]:
-            status = "GREEN (SPURIOUS)"
-            reason = "코드는 AMBER/RED이나 수치가 LIMIT 이내입니다 (Spurious 가능성)"
-
-        result["status"] = status
-        result["reason"] = reason
-
-    # Turbulence 파싱
+            if is_overweight:
+                if max_nz >= 2.6: status, reason_text = "RED", f"Severe Hard Overweight Landing [{weight_status}]"
+                elif max_nz >= 1.7: status, reason_text = "AMBER", f"Hard Overweight Landing [{weight_status}]"
+                else: status, reason_text = "GREEN", f"Normal Landing (Limit Not Exceeded) [{weight_status}]"
+            else:
+                if max_nz >= 2.86: status, reason_text = "RED", f"Severe Hard Landing [{weight_status}]"
+                elif max_nz >= 2.6: status, reason_text = "AMBER", f"Hard Landing [{weight_status}]"
+                else: status, reason_text = "GREEN", f"Normal Landing (Limit Not Exceeded) [{weight_status}]"
+        else:
+            # 💡 NEO: GW 무관하게 절대 수치 비교 (2.06, 1.80)
+            if max_nz >= 2.06 or max_ny >= 0.50: status, reason_text = "RED", "Severe Hard Landing (NEO)"
+            elif max_nz >= 1.80 or max_ny >= 0.45: status, reason_text = "AMBER", "Hard Landing (NEO)"
+            else: status, reason_text = "GREEN", "Normal Landing (Limit Not Exceeded)"
+            
     elif code.startswith('5'):
-        e1_match = re.search(r'E1\s+(-?\d{3}|-?\d{4})', report_text)
-        if e1_match:
-            lata_val = parse_kpi_value(e1_match.group(1))
-            result["kpi_data"]["E1"] = {"LATA": lata_val}
-            status, reason = evaluate_in_flight_severity(abs(lata_val))
-            result["status"] = status
-            result["reason"] = reason
+        if code in ['5600', '5700']:
+            if max_e1 > 0.41: status, reason_text = "RED", "High Lateral Acceleration (LATA > 0.41g)"
+            elif max_e1 >= 0.35: status, reason_text = "AMBER", "High Lateral Acceleration (0.35g <= LATA <= 0.41g)"
+            else: status, reason_text = "GREEN", "Normal Lateral Accel (Limit Not Exceeded)"
+        else:
+            status, reason_text = "AMBER", f"Excessive Turbulence (VRTA). AMM Limit Check Required (Code: {code})"
+            
+    return status, reason_text
 
-    return result
-
-# 💡 OCR 처리 (기존 A321 이미지 분석용으로 통합)
 @app.post("/ocr")
-async def extract_text(file: UploadFile = File(...)):
+async def extract_text_from_image(file: UploadFile = File(...)):
     if not GEMINI_API_KEY: return {"error": "API Key 미설정"}
     try:
         content = await file.read()
-        model = genai.GenerativeModel('gemini-flash-lite-latest') 
-        
-        # 회전 보정
-        try:
-            img = Image.open(io.BytesIO(content))
-            if img.height > img.width:
-                orient_prompt = "이 이미지는 항공 정비 로그의 일부야. 글자들이 수평으로 똑바로 서 보이기 위해 이미지를 시계 방향으로 몇 도 돌려야 할까? (0, 90, 180, 270 중 숫자 하나만 대답해)"
-                res_orient = await model.generate_content_async([orient_prompt, {"mime_type": file.content_type or "image/jpeg", "data": content}])
-                deg_str = re.sub(r'[^0-9]', '', res_orient.text.strip())
-                if deg_str in ["90", "180", "270"]:
-                    img = img.rotate(-int(deg_str), expand=True)
-                    buf = io.BytesIO()
-                    img.save(buf, format="JPEG")
-                    content = buf.getvalue()
-        except Exception: pass
-
         image_part = {"mime_type": file.content_type or "image/jpeg", "data": content}
-        
-        # A321 Load Report 전용 프롬프트로 변경
-        prompt = """
-        당신은 항공기 Load Report <15> 분석가입니다.
-        이미지에 보이는 텍스트를 줄바꿈이나 띄어쓰기를 최대한 원본 그대로 유지하여 전부 텍스트로 추출하세요.
-        특히 'HL'로 시작하는 기번, 'CODE' 번호, 'U1', 'U2', 'E1' 뒤에 있는 숫자들은 분석에 매우 중요하므로 절대 틀리지 않게 정확히 추출하세요.
-        """
+        model = genai.GenerativeModel('gemini-flash-lite-latest') 
+        prompt = "이미지에 있는 텍스트를 그대로 모두 추출해줘. Load Report의 포맷을 절대 망치지 말고 띄어쓰기를 유지해."
         response = await model.generate_content_async([prompt, image_part])
         return {"text": response.text.strip()}
     except Exception as e: return {"error": f"AI 분석 오류: {str(e)}"}
+
+@app.post("/analyze")
+async def analyze_report(payload: dict = Body(...)):
+    text = payload.get("text", "")
+    if not text: return {"error": "입력된 데이터가 없습니다."}
+
+    result = {
+        "fleet_type": "NEO", "aircraft_id": "UNKNOWN", 
+        "trigger_code": "UNKNOWN", "status": "UNKNOWN", "reason": "", 
+        "gw_lbs": 0, "mlw_lbs": MLW_DB["NEO"], "kpi_data": {}
+    }
+
+    # 1. 기번 및 기종 판별
+    ac_match = re.search(r'(HL\d{4})', text)
+    if ac_match:
+        result["aircraft_id"] = ac_match.group(1)
+        result["fleet_type"] = FLEET_DB.get(result["aircraft_id"], "NEO")
+        result["mlw_lbs"] = MLW_DB[result["fleet_type"]]
+
+    # 2. 코드 판별
+    code_match = re.search(r'\b(43\d{2}|44\d{2}|45\d{2}|46\d{2}|48\d{2}|49\d{2}|51\d{2}|52\d{2}|53\d{2}|56\d{2}|57\d{2})\b', text)
+    if code_match: result["trigger_code"] = code_match.group(1)
+
+    # 3. GW (Gross Weight) 파싱
+    # CE 0325 00028 139 210 1570 225 I62R02 형태에서 5번째 숫자 추출
+    ce_match = re.search(r'CE\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)', text)
+    if ce_match:
+        result["gw_lbs"] = int(ce_match.group(1)) * 100
+
+    max_nz, max_ny, max_e1 = 0.0, 0.0, 0.0
+
+    # 4. 데이터 파싱
+    if result["fleet_type"] == "CEO" and result["trigger_code"].startswith('4'):
+        # CEO Hardlanding (S3, T3 파싱)
+        s3_match = re.search(r'S3\s+([x\d]+)\s+([-0]?\d+)\s+([-0]?\d+)', text, re.IGNORECASE)
+        if s3_match and s3_match.group(1).lower() != 'xnnn':
+            max_nz = parse_kpi_value(s3_match.group(1))
+            max_ny = parse_kpi_value(s3_match.group(3))
+            result["kpi_data"]["S3 (First Touch)"] = {"Nz_kpi": max_nz, "Ny_kpi": max_ny}
+
+        t3_match = re.search(r'T3\s+([x\d]+)\s+([-0]?\d+)\s+([-0]?\d+)', text, re.IGNORECASE)
+        if t3_match and t3_match.group(1).lower() != 'xnnn':
+            nz2 = parse_kpi_value(t3_match.group(1))
+            ny2 = parse_kpi_value(t3_match.group(3))
+            max_nz, max_ny = max(max_nz, nz2), max(max_ny, ny2)
+            result["kpi_data"]["T3 (Bounce)"] = {"Nz_kpi": nz2, "Ny_kpi": ny2}
+
+    elif result["fleet_type"] == "NEO" and result["trigger_code"].startswith('4'):
+        # NEO Hardlanding (U1, U2 파싱)
+        u1_match = re.search(r'U1\s+([-0]?\d+)\s+([-0]?\d+)', text)
+        if u1_match:
+            max_nz = parse_kpi_value(u1_match.group(1))
+            max_ny = parse_kpi_value(u1_match.group(2))
+            result["kpi_data"]["U1 (First Touch)"] = {"Nz_kpi": max_nz, "Ny_kpi": max_ny}
+
+        u2_match = re.search(r'U2\s+([-0]?\d+)\s+([-0]?\d+)', text)
+        if u2_match:
+            nz2, ny2 = parse_kpi_value(u2_match.group(1)), parse_kpi_value(u2_match.group(2))
+            max_nz, max_ny = max(max_nz, nz2), max(max_ny, ny2)
+            result["kpi_data"]["U2 (Bounce)"] = {"Nz_kpi": nz2, "Ny_kpi": ny2}
+
+    if result["trigger_code"].startswith('5'):
+        e1_match = re.search(r'E1\s+([-0]?\d+)', text)
+        if e1_match: 
+            max_e1 = parse_kpi_value(e1_match.group(1))
+            result["kpi_data"]["E1 (MAX)"] = {"LATA/VRTA": max_e1}
+            max_ny = max_e1
+
+    # 5. 최종 판별
+    result["status"], result["reason"] = evaluate_severity(
+        result["trigger_code"], result["fleet_type"], max_nz, max_ny, max_e1, result["gw_lbs"], result["mlw_lbs"]
+    )
+
+    # 6. Spurious 경고 추가 (Delta 기준 명시)
+    if "GREEN" in result["status"] and result["trigger_code"] != "UNKNOWN":
+        result["reason"] += "\n💡 [Spurious Report 의심됨]: Report Code는 조치를 요구하나 실제 파싱된 값(Max)은 Green Zone입니다."
+        if result["trigger_code"] in ['5600', '5700']:
+            result["reason"] += "\n(🚨 주의: LATA Spurious 판별 시 단순 0g 기준이 아닌, 주변 평균값 대비 Delta(Max-Min) 0.09g 초과 여부 확인 필수)"
+
+    return result
+
+@app.get("/")
+async def serve_frontend(): 
+    return FileResponse("templates/index.html")
 
 if __name__ == "__main__":
     import uvicorn
