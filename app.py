@@ -27,7 +27,7 @@ async def serve_frontend():
     elif os.path.exists("index.html"):
         return FileResponse("index.html")
     else:
-        return HTMLResponse("<h1>화면 파일을 찾을 수 없습니다. 깃허브에 templates/index.html 파일이 있는지 확인해주세요.</h1>")
+        return HTMLResponse("<h1>화면 파일을 찾을 수 없습니다. templates/index.html 파일이 있는지 확인해주세요.</h1>")
 
 class AnalyzeRequest(BaseModel):
     text: str
@@ -130,24 +130,24 @@ async def analyze_report(req: AnalyzeRequest):
             
             if max_vrta >= limit_red:
                 status = "RED"
-                reason = f"Severe Hard Landing\n- VRTA: {max_vrta}g / LIMIT: {limit_red}g\n- {weight_str}"
+                reason = f"Severe Hard Landing\n- 파싱된 VRTA: {max_vrta}g / LIMIT: {limit_red}g\n- 조건: {weight_str}"
             elif max_vrta >= limit_amber:
                 status = "AMBER"
-                reason = f"Hard Landing\n- VRTA: {max_vrta}g / LIMIT: {limit_amber}g\n- {weight_str}"
+                reason = f"Hard Landing\n- 파싱된 VRTA: {max_vrta}g / LIMIT: {limit_amber}g\n- 조건: {weight_str}"
             else:
                 status = "GREEN"
-                reason = f"Normal Landing (Limit Not Exceeded)\n- VRTA: {max_vrta}g / LIMIT: {limit_amber}g\n- {weight_str}"
+                reason = f"Normal Landing (Limit Not Exceeded)\n- 파싱된 VRTA: {max_vrta}g / LIMIT: {limit_amber}g\n- 조건: {weight_str}"
 
         else:
             max_nz = max([v.get("Nz_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
             max_ny = max([v.get("Ny_kpi", 0) for v in kpi_data.values()]) if kpi_data else 0
 
             if max_nz >= 2.06 or max_ny >= 0.5:
-                status, reason = "RED", f"Severe Hard Landing\n- Nz: {max_nz}g / Ny: {max_ny}g\n- Limit: Nz >= 2.06 or Ny >= 0.5"
+                status, reason = "RED", f"Severe Hard Landing\n- 파싱된 Nz: {max_nz}g, Ny: {max_ny}g\n- LIMIT: Nz >= 2.06 or Ny >= 0.5"
             elif max_nz >= 1.80 or max_ny >= 0.45:
-                status, reason = "AMBER", f"Hard Landing\n- Nz: {max_nz}g / Ny: {max_ny}g\n- Limit: Nz >= 1.80 or Ny >= 0.45"
+                status, reason = "AMBER", f"Hard Landing\n- 파싱된 Nz: {max_nz}g, Ny: {max_ny}g\n- LIMIT: Nz >= 1.80 or Ny >= 0.45"
             else:
-                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)\n- Nz: {max_nz}g / Ny: {max_ny}g"
+                status, reason = "GREEN", f"Normal Landing (Limit Not Exceeded)\n- 파싱된 Nz: {max_nz}g, Ny: {max_ny}g"
 
     elif trigger_code in ["5100", "5200", "5300"]:
         max_vrta = max([v.get("VRTA", 0) for v in kpi_data.values()]) if kpi_data else 0
@@ -155,23 +155,23 @@ async def analyze_report(req: AnalyzeRequest):
         
         if trigger_code in ["5100", "5200"]:
             if max_vrta >= 2.5 or min_vrta <= -1.0:
-                status, reason = "RED", f"Inspection Required: Turbulence/Maneuver\n- VRTA MAX: {max_vrta}g / MIN: {min_vrta}g\n- Limit: >= 2.5g or <= -1.0g"
+                status, reason = "RED", f"Inspection Required: Turbulence/Maneuver\n- 파싱된 VRTA MAX: {max_vrta}g / MIN: {min_vrta}g\n- LIMIT: >= 2.5g or <= -1.0g"
             else:
-                status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- VRTA MAX: {max_vrta}g / MIN: {min_vrta}g"
+                status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 파싱된 VRTA MAX: {max_vrta}g / MIN: {min_vrta}g"
         elif trigger_code == "5300":
             if max_vrta >= 2.0 or min_vrta <= 0.0:
-                 status, reason = "RED", f"Inspection Required: Turbulence/Maneuver (Flaps Ext)\n- VRTA MAX: {max_vrta}g / MIN: {min_vrta}g\n- Limit: >= 2.0g or <= 0.0g"
+                 status, reason = "RED", f"Inspection Required: Turbulence/Maneuver (Flaps Ext)\n- 파싱된 VRTA MAX: {max_vrta}g / MIN: {min_vrta}g\n- LIMIT: >= 2.0g or <= 0.0g"
             else:
-                 status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- VRTA MAX: {max_vrta}g / MIN: {min_vrta}g"
+                 status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 파싱된 VRTA MAX: {max_vrta}g / MIN: {min_vrta}g"
 
     elif trigger_code in ["5600", "5700"]:
         max_lata = max([v.get("LATA", 0) for v in kpi_data.values()]) if kpi_data else 0
         if max_lata > 0.41:
-            status, reason = "RED", f"Severe High Lateral\n- LATA: {max_lata}g / Limit: > 0.41g"
+            status, reason = "RED", f"Severe High Lateral\n- 파싱된 LATA: {max_lata}g / LIMIT: > 0.41g"
         elif max_lata >= 0.35:
-            status, reason = "AMBER", f"High Lateral\n- LATA: {max_lata}g / Limit: >= 0.35g"
+            status, reason = "AMBER", f"High Lateral\n- 파싱된 LATA: {max_lata}g / LIMIT: >= 0.35g"
         else:
-            status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- LATA: {max_lata}g"
+            status, reason = "GREEN", f"No Inspection Required (Limit Not Exceeded)\n- 파싱된 LATA: {max_lata}g"
     else:
         status = "UNKNOWN"
         reason = f"분석 불가 (코드 매칭 실패)"
