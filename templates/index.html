@@ -38,8 +38,10 @@
         .info-panel { background: #f8fafc; padding: 20px; border-left: 6px solid #1e40af; margin-bottom: 24px; font-size: 16px; line-height: 1.6; white-space: pre-line; border-radius: 0 8px 8px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .chart-container { position: relative; height: 450px; width: 100%; margin-bottom: 40px; }
         
+        /* 커스텀 알림창 */
         #customAlert { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 16px 32px; border-radius: 8px; z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); font-weight: bold; font-size: 16px; text-align: center; max-width: 90%; word-break: break-word; transition: opacity 0.3s; opacity: 0; }
 
+        /* 매뉴얼 SVG 다이어그램 공통 스타일 */
         .svg-flowchart-container { text-align: center; margin-top: 20px; background: #ffffff; padding: 15px; border: 1px solid #e5e7eb; border-radius: 12px; overflow-x: auto; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         svg { max-width: 100%; height: auto; font-family: 'Inter', Arial, sans-serif; font-size: 11px; }
         svg .box { fill: #fef9c3; stroke: #374151; stroke-width: 1.5; }
@@ -76,13 +78,13 @@
             <div id="statusBox" class="status-box status-GREEN">결과 대기중</div>
             
             <div class="info-panel">
-                <p><strong>✈️ 대상 기종:</strong> <span id="fleetType"></span> (<span id="acId"></span>)</p>
+                <p><strong>✈️ 대상 기종:</strong> <span id="fleetType"></span> <span id="acId" style="color:#6b7280; font-weight:normal;"></span></p>
                 <p><strong>🚨 Trigger Code:</strong> <span id="triggerCode" style="font-weight:bold; color:#ef4444;"></span></p>
                 <p><strong>📝 판별 사유:</strong><br><span id="reasonText" style="font-weight:bold; color:#1e40af;"></span></p>
             </div>
 
             <h3 style="color: #1e3a8a; text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 15px;" id="chartTitle">📊 분석 그래프</h3>
-            <div class="chart-container" id="chartContainer">
+            <div class="chart-container">
                 <canvas id="limitChart"></canvas>
             </div>
 
@@ -214,21 +216,21 @@
                         <marker id="arrow-gray-turb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
                         <marker id="arrow-red-turb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
                     </defs>
-                    <polygon id="turb-d1" class="box" points="300,20 420,70 300,120 180,70" />
+                    <polygon id="turb-d1" class="box" points="300,20 450,70 300,120 150,70" />
                     <text x="300" y="65" text-anchor="middle" class="text-black">VRTA LIMIT</text>
                     <text x="300" y="85" text-anchor="middle" class="text-black">EXCEEDED?</text>
 
-                    <rect id="turb-red" class="box" x="50" y="150" width="200" height="40" />
-                    <text x="150" y="175" text-anchor="middle" class="text-black" id="turb-red-txt">INSPECTION REQUIRED</text>
+                    <rect id="turb-red" class="box" x="80" y="170" width="160" height="40" />
+                    <text x="160" y="195" text-anchor="middle" class="text-black" id="turb-red-txt">DO INSPECTION</text>
 
-                    <rect id="turb-green" class="box" x="350" y="150" width="200" height="40" />
-                    <text x="450" y="175" text-anchor="middle" class="text-black" id="turb-green-txt">NO MORE STEPS</text>
+                    <rect id="turb-green" class="box" x="360" y="170" width="200" height="40" />
+                    <text x="460" y="195" text-anchor="middle" class="text-black" id="turb-green-txt">NO INSPECTION REQUIRED</text>
 
-                    <path id="turb-p1" class="path path-turb" d="M 180 70 L 150 70 L 150 150" marker-end="url(#arrow-gray)" />
-                    <text x="160" y="60" class="text-black">YES</text>
+                    <path id="turb-p1" class="path path-turb" d="M 225 95 L 160 95 L 160 170" marker-end="url(#arrow-gray-turb)" />
+                    <text x="190" y="85" class="text-black">YES</text>
                     
-                    <path id="turb-p2" class="path path-turb" d="M 420 70 L 450 70 L 450 150" marker-end="url(#arrow-gray)" />
-                    <text x="430" y="60" class="text-black">NO</text>
+                    <path id="turb-p2" class="path path-turb" d="M 375 95 L 460 95 L 460 170" marker-end="url(#arrow-gray-turb)" />
+                    <text x="410" y="85" class="text-black">NO</text>
                 </svg>
             </div>
 
@@ -303,12 +305,15 @@
                             ctx.font = 'bold 15px Arial';
                             ctx.textAlign = 'center';
                             
+                            // MIN 텍스트는 점 아래로(25), MAX는 점 위로(-18) 분리하여 겹침 방지!
+                            let yOffset = customLabel.includes('MIN') ? 25 : -18;
+                            
                             ctx.strokeStyle = 'white';
                             ctx.lineWidth = 4;
-                            ctx.strokeText(customLabel, x, y - 18);
+                            ctx.strokeText(customLabel, x, y + yOffset);
                             
                             ctx.fillStyle = '#111827';
-                            ctx.fillText(customLabel, x, y - 18);
+                            ctx.fillText(customLabel, x, y + yOffset);
                         }
                         ctx.restore();
                     });
@@ -399,9 +404,12 @@
             document.getElementById('resultSection').style.display = 'block';
             document.getElementById('fleetType').innerText = data.fleet_type;
             
-            // 기종이 없을 경우 방어 코드 추가 (괄호 텅 빔 방지)
-            const tailNumber = data.aircraft_id && data.aircraft_id !== "UNKNOWN" ? data.aircraft_id : "기번 확인불가";
-            document.getElementById('acId').innerText = tailNumber;
+            // 기종이 Unknown이 아니면 괄호 포함해서 출력
+            if(data.aircraft_id && data.aircraft_id !== "UNKNOWN") {
+                document.getElementById('acId').innerText = `(${data.aircraft_id})`;
+            } else {
+                document.getElementById('acId').innerText = "";
+            }
             
             document.getElementById('triggerCode').innerText = data.trigger_code;
             document.getElementById('reasonText').innerText = data.reason;
@@ -438,9 +446,6 @@
             let fleet = data.fleet_type;
             let gw = data.gw_lbs;
             let mlw = data.mlw_lbs;
-            
-            // 기본 캔버스 높이 설정
-            document.getElementById('chartContainer').style.height = '450px';
 
             if (fleet === 'CEO' && code.startsWith('4')) {
                 document.getElementById('chartTitle').innerText = '📊 CEO Hard Landing Limit (Weight vs VRTA)';
@@ -516,9 +521,6 @@
                         }
                     };
                 } else {
-                    // 난기류 1D 수평선 차트 완벽 구현 (높이를 줄여서 진짜 띠 모양으로 변경)
-                    document.getElementById('chartContainer').style.height = '150px'; // 높이를 대폭 줄임
-                    
                     let isClean = (code === '5100' || code === '5200');
                     document.getElementById('chartTitle').innerText = isClean ? '📊 Turbulence Limit (CLEAN CONFIGURATION)' : '📊 Turbulence Limit (FLAPS AND/OR SLATS EXTENDED)';
                     
@@ -548,16 +550,16 @@
                             annotation: { 
                                 drawTime: 'beforeDatasetsDraw', 
                                 annotations: { 
-                                    // 얇은 가로 띠 형태로 표시하기 위해 yMin 0.4, yMax 0.6 설정
-                                    boxLeftRed: { type: 'box', xMin: -3.0, xMax: minLim, yMin: 0.4, yMax: 0.6, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
-                                    boxRightRed: { type: 'box', xMin: maxLim, xMax: 4.5, yMin: 0.4, yMax: 0.6, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
-                                    boxGreen: { type: 'box', xMin: minLim, xMax: maxLim, yMin: 0.4, yMax: 0.6, backgroundColor: 'rgba(16, 185, 129, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
+                                    // yMin, yMax를 조절하여 슬림한 '띠' 형태로 제작
+                                    boxLeftRed: { type: 'box', xMin: -3.0, xMax: minLim, yMin: 0.45, yMax: 0.55, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxRightRed: { type: 'box', xMin: maxLim, xMax: 4.5, yMin: 0.45, yMax: 0.55, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxGreen: { type: 'box', xMin: minLim, xMax: maxLim, yMin: 0.45, yMax: 0.55, backgroundColor: 'rgba(16, 185, 129, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
                                 } 
                             } 
                         },
                         scales: { 
                             x: { type: 'linear', position: 'bottom', title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}}, min: -2.0, max: 3.5 }, 
-                            y: { display: false, min: 0, max: 1.0 } // 1D 느낌을 위해 Y축 완전 숨김
+                            y: { display: false, min: 0, max: 1.0 } // 1D 수평선 효과
                         }
                     };
                 }
@@ -643,6 +645,7 @@
                 document.getElementById('turbFlowchartArea').style.display = 'block';
                 let activePaths = [], endNodeId = '', statusClass = '';
                 
+                // DO INSPECTION (RED) or NO INSPECTION REQUIRED (GREEN)
                 if (status === 'RED') { activePaths.push('turb-p1'); endNodeId = 'turb-red'; statusClass = 'active-red'; }
                 else { activePaths.push('turb-p2'); endNodeId = 'turb-green'; statusClass = 'active-green'; }
 
