@@ -7,7 +7,6 @@ import io
 import os
 
 app = FastAPI()
-# 유령 공백(U+00A0) 에러 원천 차단을 위해 한 줄로 쫙 폈습니다.
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 GEMINI_API_KEY = "본인의_GEMINI_API_KEY_입력"
@@ -54,11 +53,7 @@ def parse_report_data(text):
             except ValueError:
                 pass
 
-    neo_tails = [
-        "8364", "8371", "8356", "8398", "8399", 
-        "8510", "8511", "8534", "8533", "8582", 
-        "8584", "8586", "8705"
-    ]
+    neo_tails = ["8364", "8371", "8356", "8398", "8399", "8510", "8511", "8534", "8533", "8582", "8584", "8586", "8705"]
     
     upper_text = text.upper()
     if any(keyword in upper_text for keyword in ["NEO", "LEAP", "PW11", "A321-25", "A321-27"]):
