@@ -38,13 +38,24 @@
         .info-panel { background: #f8f9fa; padding: 15px; border-left: 5px solid #0033a0; margin-bottom: 20px; font-size: 15px; line-height: 1.6; white-space: pre-line;}
         .desc-text { color: #666; font-size: 0.9em; display: block; margin-top: 2px; }
         .chart-container { position: relative; height: 500px; width: 100%; margin-bottom: 30px; }
-        .mermaid-container { text-align: center; margin-top: 20px; background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 8px; overflow-x: auto;}
+        
+        /* 매뉴얼 SVG 순서도용 컨테이너 */
+        .svg-flowchart-container { text-align: center; margin-top: 20px; background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 8px; overflow-x: auto;}
+        svg text { font-family: sans-serif; font-size: 12px; pointer-events: none; }
+        svg .box { fill: #f9f9f9; stroke: #333; stroke-width: 1.5; }
+        svg .path { fill: none; stroke: #888; stroke-width: 2; }
+        svg .path.active { stroke: red; stroke-width: 4; }
+        svg .box.active-green { fill: #28a745; stroke: #000; stroke-width: 2; }
+        svg .box.active-amber { fill: #ffc107; stroke: #000; stroke-width: 2; }
+        svg .box.active-red { fill: #dc3545; stroke: #000; stroke-width: 2; }
+        svg .text-white { fill: white; font-weight: bold; }
+        svg .text-black { fill: #333; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>✈️ A321 LOAD REPORT 분석기</h1>
-        <p class="subtitle">CEO/NEO 매뉴얼 자동 판단, GW/MLW 계산 및 Limit 검증 시스템</p>
+        <p class="subtitle">CEO/NEO 자동 판단, GW/MLW 계산 및 Limit 검증 시스템</p>
         
         <div class="input-section">
             <label for="reportInput">📄 Load Report 데이터 입력 (TEXT 복붙 또는 캡처 이미지 Ctrl+V)</label>
@@ -66,7 +77,6 @@
             
             <div class="info-panel">
                 <p><strong>✈️ 대상 기종:</strong> <span id="fleetType"></span> (<span id="acId"></span>)</p>
-                <p><strong>⚖️ 중량 정보:</strong> GW <span id="gwLbs"></span> / MLW <span id="mlwLbs"></span></p>
                 <p>
                     <strong>🚨 Trigger Code:</strong> <span id="triggerCode" style="font-weight:bold; color:#dc3545;"></span>
                     <span id="triggerDesc" class="desc-text"></span>
@@ -80,7 +90,95 @@
             </div>
 
             <h3 style="color: #0033a0; text-align: center;">🔀 Decision Flow Chart (매뉴얼 기준)</h3>
-            <div class="mermaid-container">
+            
+            <!-- SVG 직접 그리기 영역 (CEO 하드랜딩 전용) -->
+            <div id="ceoFlowchartArea" class="svg-flowchart-container" style="display:none;">
+                <svg width="900" height="550" viewBox="0 0 900 550" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <marker id="arrow-gray" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#888" />
+                        </marker>
+                        <marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="red" />
+                        </marker>
+                    </defs>
+
+                    <!-- Paths (Lines) -->
+                    <path id="path-gw-v26" class="path" d="M 380 50 L 250 50 L 250 160" marker-end="url(#arrow-gray)" />
+                    <text x="310" y="40" class="text-black">YES</text>
+                    
+                    <path id="path-gw-v17" class="path" d="M 520 50 L 650 50 L 650 160" marker-end="url(#arrow-gray)" />
+                    <text x="580" y="40" class="text-black">NO</text>
+
+                    <path id="path-v26-v286" class="path" d="M 180 200 L 150 200 L 150 310" marker-end="url(#arrow-gray)" />
+                    <text x="160" y="190" class="text-black">YES</text>
+
+                    <path id="path-v26-nms1" class="path" d="M 320 200 L 350 200 L 350 320" marker-end="url(#arrow-gray)" />
+                    <text x="330" y="190" class="text-black">NO</text>
+
+                    <path id="path-v17-v26ow" class="path" d="M 580 200 L 550 200 L 550 310" marker-end="url(#arrow-gray)" />
+                    <text x="560" y="190" class="text-black">YES</text>
+
+                    <path id="path-v17-nms2" class="path" d="M 720 200 L 750 200 L 750 320" marker-end="url(#arrow-gray)" />
+                    <text x="730" y="190" class="text-black">NO</text>
+
+                    <path id="path-v286-shl" class="path" d="M 80 350 L 80 470" marker-end="url(#arrow-gray)" />
+                    <text x="60" y="410" class="text-black">YES</text>
+
+                    <path id="path-v286-hl" class="path" d="M 220 350 L 220 470" marker-end="url(#arrow-gray)" />
+                    <text x="230" y="410" class="text-black">NO</text>
+
+                    <path id="path-v26ow-shol" class="path" d="M 480 350 L 480 470" marker-end="url(#arrow-gray)" />
+                    <text x="460" y="410" class="text-black">YES</text>
+
+                    <path id="path-v26ow-hol" class="path" d="M 620 350 L 620 470" marker-end="url(#arrow-gray)" />
+                    <text x="630" y="410" class="text-black">NO</text>
+
+                    <!-- Nodes (Boxes) -->
+                    <!-- GW <= MLW -->
+                    <polygon id="node-gw" class="box" points="450,10 520,50 450,90 380,50" />
+                    <text x="450" y="54" text-anchor="middle" class="text-black">GW &le; MLW</text>
+
+                    <!-- VRTA >= 2.6 -->
+                    <polygon id="node-v26" class="box" points="250,160 320,200 250,240 180,200" />
+                    <text x="250" y="204" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
+
+                    <!-- VRTA >= 1.7 -->
+                    <polygon id="node-v17" class="box" points="650,160 720,200 650,240 580,200" />
+                    <text x="650" y="204" text-anchor="middle" class="text-black">VRTA &ge; 1.7 g</text>
+
+                    <!-- VRTA >= 2.86 -->
+                    <polygon id="node-v286" class="box" points="150,310 220,350 150,390 80,350" />
+                    <text x="150" y="354" text-anchor="middle" class="text-black">VRTA &ge; 2.86 g</text>
+
+                    <!-- NO MORE STEPS 1 -->
+                    <rect id="node-nms1" class="box" x="280" y="320" width="140" height="60" />
+                    <text x="350" y="354" text-anchor="middle" class="text-black" id="text-nms1">NO MORE STEPS</text>
+
+                    <!-- VRTA >= 2.6 (OW) -->
+                    <polygon id="node-v26ow" class="box" points="550,310 620,350 550,390 480,350" />
+                    <text x="550" y="354" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
+
+                    <!-- NO MORE STEPS 2 -->
+                    <rect id="node-nms2" class="box" x="680" y="320" width="140" height="60" />
+                    <text x="750" y="354" text-anchor="middle" class="text-black" id="text-nms2">NO MORE STEPS</text>
+
+                    <!-- ACTIONS -->
+                    <rect id="node-shl" class="box" x="10" y="470" width="140" height="60" />
+                    <text x="80" y="495" text-anchor="middle" class="text-black" id="text-shl"><tspan x="80" dy="0">SEVERE</tspan><tspan x="80" dy="16">HARD LANDING</tspan></text>
+
+                    <rect id="node-hl" class="box" x="150" y="470" width="140" height="60" />
+                    <text x="220" y="504" text-anchor="middle" class="text-black" id="text-hl">HARD LANDING</text>
+
+                    <rect id="node-shol" class="box" x="410" y="470" width="140" height="60" />
+                    <text x="480" y="495" text-anchor="middle" class="text-black" id="text-shol"><tspan x="480" dy="0">SEVERE HARD</tspan><tspan x="480" dy="16">OVERWEIGHT</tspan></text>
+
+                    <rect id="node-hol" class="box" x="550" y="470" width="140" height="60" />
+                    <text x="620" y="495" text-anchor="middle" class="text-black" id="text-hol"><tspan x="620" dy="0">HARD</tspan><tspan x="620" dy="16">OVERWEIGHT</tspan></text>
+                </svg>
+            </div>
+
+            <div class="mermaid-container" id="mermaidArea">
                 <div class="mermaid" id="flowchart"></div>
             </div>
         </div>
@@ -90,6 +188,26 @@
         mermaid.initialize({ startOnLoad: false, theme: 'default' });
         let currentChart = null; 
         let pastedImageFile = null;
+
+        // 그래프에 점값을 항상 띄워주는 플러그인 (마우스오버 불필요)
+        const alwaysShowTooltipPlugin = {
+            id: 'alwaysShowTooltip',
+            afterDraw(chart, args, options) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, i) => {
+                    chart.getDatasetMeta(i).data.forEach((datapoint, index) => {
+                        const { x, y } = datapoint.tooltipPosition();
+                        const text = `GW: ${dataset.data[index].x.toLocaleString()} / VRTA: ${dataset.data[index].y}g`;
+                        ctx.save();
+                        ctx.fillStyle = 'black';
+                        ctx.font = 'bold 13px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(text, x, y - 15);
+                        ctx.restore();
+                    });
+                });
+            }
+        };
 
         document.addEventListener('paste', function(e) {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -165,10 +283,8 @@
             document.getElementById('fleetType').innerText = data.fleet_type;
             document.getElementById('acId').innerText = data.aircraft_id;
             document.getElementById('triggerCode').innerText = data.trigger_code;
-            document.getElementById('triggerDesc').innerText = "- 매뉴얼 기준: " + data.trigger_desc;
+            document.getElementById('triggerDesc').innerText = "- " + data.trigger_desc;
             document.getElementById('reasonText').innerText = data.reason;
-            document.getElementById('gwLbs').innerText = data.gw_lbs > 0 ? data.gw_lbs.toLocaleString() + " LBS" : "데이터 없음";
-            document.getElementById('mlwLbs').innerText = data.mlw_lbs > 0 ? data.mlw_lbs.toLocaleString() + " LBS" : "데이터 없음";
 
             const statusBox = document.getElementById('statusBox');
             statusBox.className = 'status-box'; 
@@ -176,12 +292,12 @@
             else if (data.status.includes('AMBER')) statusBox.classList.add('status-AMBER');
             else statusBox.classList.add('status-GREEN');
             
-            if (data.status === 'GREEN') statusBox.innerText = "분석 결과: GREEN ZONE (정상 착륙 / 한계치 이내)";
-            else statusBox.innerText = "분석 결과: " + data.status + " ZONE";
+            if (data.status === 'GREEN') statusBox.innerText = "분석 결과: Green Zone";
+            else statusBox.innerText = "분석 결과: " + data.status + " Zone";
 
             let maxNz = 0; let maxNy = 0;
             if (data.fleet_type === 'CEO' && data.trigger_code.startsWith('4')) {
-                // CEO는 S3, T3의 첫번째 값(VRTA)만 읽어서 맥스값 계산
+                // CEO 하드랜딩: S3, T3의 첫번째 값(VRTA)만 읽어서 계산 (E1 배제 완료)
                 let s3 = data.kpi_data['S3'] ? data.kpi_data['S3'].VRTA : 0;
                 let t3 = data.kpi_data['T3'] ? data.kpi_data['T3'].VRTA : 0;
                 maxNz = Math.max(s3, t3);
@@ -196,7 +312,7 @@
             }
             
             drawChart(maxNy, maxNz, data.fleet_type, data.trigger_code, data.gw_lbs, data.mlw_lbs);
-            drawFlowchart(data.trigger_code, data.status, data.fleet_type, data.gw_lbs, data.mlw_lbs);
+            drawFlowchart(data.trigger_code, data.status, data.fleet_type, data.gw_lbs, data.mlw_lbs, maxNz);
             document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -214,7 +330,7 @@
 
                 chartData = {
                     datasets: [{
-                        label: '리포트 판독 수치 (GW vs VRTA_Max)', 
+                        label: '리포트 판독 수치', // 범례 삭제 처리됨
                         data: [{x: safeGw, y: nz}],
                         backgroundColor: 'blue', borderColor: 'white', borderWidth: 3, pointRadius: 10, pointHoverRadius: 12
                     }]
@@ -222,27 +338,30 @@
 
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'AIRCRAFT WEIGHT (LBS)', font: {weight: 'bold'}}, min: 100000, max: mtow },
-                        y: { title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}}, min: 0, max: 4.0 }
-                    },
                     plugins: { 
+                        legend: { display: false }, // 범례 삭제
                         annotation: { 
                             annotations: { 
-                                boxLeftRed: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.86, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
-                                boxLeftAmber: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.6, yMax: 2.86, backgroundColor: 'rgba(255, 153, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
-                                boxLeftGreen: { type: 'box', xMin: 100000, xMax: mlw, yMin: 0, yMax: 2.6, backgroundColor: 'rgba(0, 255, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
-                                boxRightRed: { type: 'box', xMin: mlw, xMax: mtow, yMin: 2.6, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
-                                boxRightAmber: { type: 'box', xMin: mlw, xMax: mtow, yMin: 1.7, yMax: 2.6, backgroundColor: 'rgba(255, 153, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
-                                boxRightGreen: { type: 'box', xMin: mlw, xMax: mtow, yMin: 0, yMax: 1.7, backgroundColor: 'rgba(0, 255, 0, 0.8)', borderWidth: 1, borderColor: 'black' },
+                                boxLeftRed: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.86, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
+                                boxLeftAmber: { type: 'box', xMin: 100000, xMax: mlw, yMin: 2.6, yMax: 2.86, backgroundColor: 'rgba(255, 153, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
+                                boxLeftGreen: { type: 'box', xMin: 100000, xMax: mlw, yMin: 0, yMax: 2.6, backgroundColor: 'rgba(0, 255, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
+                                boxRightRed: { type: 'box', xMin: mlw, xMax: mtow, yMin: 2.6, yMax: 4.0, backgroundColor: 'rgba(255, 0, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
+                                boxRightAmber: { type: 'box', xMin: mlw, xMax: mtow, yMin: 1.7, yMax: 2.6, backgroundColor: 'rgba(255, 153, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
+                                boxRightGreen: { type: 'box', xMin: mlw, xMax: mtow, yMin: 0, yMax: 1.7, backgroundColor: 'rgba(0, 255, 0, 1.0)', borderWidth: 1, borderColor: 'black' },
                                 lineMlw: { type: 'line', xMin: mlw, xMax: mlw, yMin: 0, yMax: 4.0, borderColor: 'black', borderWidth: 2, label: { content: 'MLW', display: true, position: 'end', yAdjust: 15 } }
                             } 
                         },
-                        tooltip: { callbacks: { label: function(context) { return `Weight: ${context.parsed.x.toLocaleString()} LBS, VRTA: ${context.parsed.y}g`; } } }
+                        tooltip: { enabled: false } // 항상 라벨이 떠있으므로 마우스오버 툴팁은 끔
+                    },
+                    scales: {
+                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'AIRCRAFT WEIGHT (LBS)', font: {weight: 'bold'}}, min: 100000, max: mtow },
+                        y: { title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}}, min: 0, max: 4.0 }
                     }
                 };
+                currentChart = new Chart(ctx, { type: 'scatter', data: chartData, options: chartOptions, plugins: [alwaysShowTooltipPlugin] });
 
             } else {
+                // NEO 또는 5XXX 코드 로직
                 let yMax = 3.5; let xMax = 0.6;
                 let titleY = '수직 가속도 (Vertical)'; let titleX = '측면 가속도 (Lateral)';
                 let redBox, amberBox, greenBox;
@@ -273,174 +392,131 @@
 
                 chartData = {
                     datasets: [{
-                        label: '리포트 판독 수치 (MAX)', data: [{x: ny, y: nz}],
+                        label: '데이터', data: [{x: ny, y: nz}],
                         backgroundColor: 'blue', borderColor: 'white', borderWidth: 2, pointRadius: 10, pointHoverRadius: 12
                     }]
                 };
 
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { type: 'linear', position: 'bottom', title: {display: true, text: titleX, font: {weight: 'bold'}}, min: 0, max: xMax },
-                        y: { title: {display: true, text: titleY, font: {weight: 'bold'}}, min: (code.startsWith('5') && code !== '5600' && code !== '5700') ? -1.5 : 0, max: yMax }
-                    },
-                    plugins: { annotation: { annotations: { boxRed: redBox, boxAmber: amberBox, boxGreen: greenBox } } }
+                    plugins: { legend: { display: false }, annotation: { annotations: { boxRed: redBox, boxAmber: amberBox, boxGreen: greenBox } } },
+                    scales: { x: { type: 'linear', position: 'bottom', title: {display: true, text: titleX, font: {weight: 'bold'}}, min: 0, max: xMax }, y: { title: {display: true, text: titleY, font: {weight: 'bold'}}, min: (code.startsWith('5') && code !== '5600' && code !== '5700') ? -1.5 : 0, max: yMax } }
                 };
+                currentChart = new Chart(ctx, { type: 'scatter', data: chartData, options: chartOptions, plugins: [alwaysShowTooltipPlugin] });
             }
-
-            currentChart = new Chart(ctx, { type: 'scatter', data: chartData, options: chartOptions });
         }
 
-        function drawFlowchart(code, status, fleetType, gw, mlw) {
-            let activeLinks = [];
-            let graphDefinition = '';
-            
+        function drawFlowchart(code, status, fleetType, gw, mlw, vrta) {
+            const ceoArea = document.getElementById('ceoFlowchartArea');
+            const mermaidArea = document.getElementById('mermaidArea');
+
             if (code.startsWith('4') && fleetType === 'CEO') {
+                ceoArea.style.display = 'block';
+                mermaidArea.style.display = 'none';
+
+                // 초기화: 모든 패스를 회색 얇게, 모든 박스를 흰색으로
+                document.querySelectorAll('.path').forEach(el => { el.classList.remove('active'); el.setAttribute('marker-end', 'url(#arrow-gray)'); });
+                document.querySelectorAll('.box').forEach(el => { el.classList.remove('active-green', 'active-amber', 'active-red'); });
+                document.querySelectorAll('.text-black, .text-white').forEach(el => { el.classList.replace('text-white', 'text-black'); });
+
                 const isOverweight = gw > mlw;
-                // 매뉴얼의 전체 박스를 빠짐없이 그리고, 선을 직각(Orthogonal/step)으로 설정합니다.
-                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
-                
-                graphDefinition += `  T1([PRIMARY TRIGGER<br>FLIGHT CREW REPORT OF A HARD<br>LANDING OR A HARD OVERWEIGHT<br>LANDING ON THE MLG ONLY])\n`;
-                graphDefinition += `  T2([ALTERNATIVE TRIGGER<br>LOAD REPORT 15 GENERATED<br>WITH TRIGGER CODE 4XXX])\n`;
-                graphDefinition += `  D1{DMU LOAD REPORT 15<br>AVAILABLE WITH TRIGGER CODE<br>4XXX OR DFDR/QAR READ-OUT<br>AVAILABLE?}\n`;
-                graphDefinition += `  B1[DO THE INSPECTION WITH THE<br>STEPS FOR A SEVERE HARD<br>LANDING OR A SEVERE HARD<br>OVERWEIGHT-LANDING]\n`;
-                graphDefinition += `  B2[IF YOU DO NOT FIND DAMAGE,<br>THE AIRCRAFT CAN RETURN TO<br>SERVICE FOR A TEMPORARY<br>PERIOD OF 200 FLIGHT<br>CYCLES/30 DAYS]\n`;
-                graphDefinition += `  B3[GET THE IMPACT PARAMETERS FROM LOAD<br>REPORT 15 OR QAR OR DFDR AND COMPARE THE VALUES]\n`;
-                
-                graphDefinition += `  D2{"GW <= MLW"}\n`;
-                graphDefinition += `  D3{"VRTA >= 2.6 g"}\n`;
-                graphDefinition += `  D4{"VRTA >= 1.7 g"}\n`;
-                graphDefinition += `  B4[NO MORE STEPS]\n`;
-                graphDefinition += `  B5[NO MORE STEPS]\n`;
-                graphDefinition += `  D5{"VRTA >= 2.86 g"}\n`;
-                graphDefinition += `  D6{"VRTA >= 2.6 g"}\n`;
-                graphDefinition += `  B6[DO THE INSPECTION WITH<br>THE STEPS FOR A SEVERE<br>HARD LANDING]\n`;
-                graphDefinition += `  B7[DO THE INSPECTION<br>WITH THE STEPS FOR<br>A HARD LANDING]\n`;
-                graphDefinition += `  B8[DO THE INSPECTION<br>WITH THE STEPS FOR<br>A SEVERE HARD<br>OVERWEIGHT-LANDING]\n`;
-                graphDefinition += `  B9[DO THE INSPECTION<br>WITH THE STEPS<br>FOR A HARD<br>OVERWEIGHT LANDING]\n`;
-                graphDefinition += `  B10[ - SEND THE RAW DATA FROM THE DFDR OR FROM THE QAR TO AIRBUS.<br> - RECORD THE DAMAGE THAT YOU FIND AND/OR THE INSPECTION RESULTS<br>   IN THE PROFORMA AND SEND IT TO AIRBUS.<br> - CONTACT AIRBUS FOR TECHNICAL INSTRUCTIONS.<br> - OBEY THE AIRBUS INSTRUCTIONS BEFORE THE NEXT FLIGHT.]\n`;
+                let activePaths = [];
+                let endNodeId = '';
+                let statusClass = '';
 
-                graphDefinition += `  T1 --> D1\n`; // 0
-                graphDefinition += `  D1 -- NO --> B1\n`; // 1
-                graphDefinition += `  B1 --> B2\n`; // 2
-                graphDefinition += `  B2 --> B3\n`; // 3
-                graphDefinition += `  D1 -- YES --> B3\n`; // 4
-                graphDefinition += `  T2 --> B3\n`; // 5
-                graphDefinition += `  T2 --> B1\n`; // 6
-                graphDefinition += `  B3 --> D2\n`; // 7
-                
-                // 여기서부터 GW <= MLW 판단 로직의 선(Link) 번호가 시작됩니다 (번호 8번)
-                graphDefinition += `  D2 -- YES --> D3\n`; // 8
-                graphDefinition += `  D2 -- NO --> D4\n`; // 9
-                graphDefinition += `  D3 -- NO --> B4\n`; // 10
-                graphDefinition += `  D3 -- YES --> D5\n`; // 11
-                graphDefinition += `  D4 -- NO --> B5\n`; // 12
-                graphDefinition += `  D4 -- YES --> D6\n`; // 13
-                graphDefinition += `  D5 -- NO --> B7\n`; // 14
-                graphDefinition += `  D5 -- YES --> B6\n`; // 15
-                graphDefinition += `  D6 -- NO --> B9\n`; // 16
-                graphDefinition += `  D6 -- YES --> B8\n`; // 17
-                
-                graphDefinition += `  B6 --> B10\n`; // 18
-                graphDefinition += `  B7 --> B10\n`; // 19
-                graphDefinition += `  B8 --> B10\n`; // 20
-                graphDefinition += `  B9 --> B10\n`; // 21
-
-                // 분석 결과(GW, 상태)에 따라 매뉴얼 흐름도의 화살표를 빨간색으로 색칠
                 if (!isOverweight) {
-                    if (status.includes('GREEN')) {
-                        activeLinks.push(8, 10);
-                        graphDefinition += `style B4 fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                    } else if (status.includes('AMBER')) {
-                        activeLinks.push(8, 11, 14, 19);
-                        graphDefinition += `style B7 fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
-                    } else if (status.includes('RED')) {
-                        activeLinks.push(8, 11, 15, 18);
-                        graphDefinition += `style B6 fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                    activePaths.push('path-gw-v26');
+                    if (vrta >= 2.86) {
+                        activePaths.push('path-v26-v286', 'path-v286-shl');
+                        endNodeId = 'node-shl'; statusClass = 'active-red'; document.getElementById('text-shl').classList.replace('text-black', 'text-white');
+                    } else if (vrta >= 2.6) {
+                        activePaths.push('path-v26-v286', 'path-v286-hl');
+                        endNodeId = 'node-hl'; statusClass = 'active-amber';
+                    } else {
+                        activePaths.push('path-v26-nms1');
+                        endNodeId = 'node-nms1'; statusClass = 'active-green'; document.getElementById('text-nms1').classList.replace('text-black', 'text-white');
                     }
                 } else {
-                    if (status.includes('GREEN')) {
-                        activeLinks.push(9, 12);
-                        graphDefinition += `style B5 fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                    } else if (status.includes('AMBER')) {
-                        activeLinks.push(9, 13, 16, 21);
-                        graphDefinition += `style B9 fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
-                    } else if (status.includes('RED')) {
-                        activeLinks.push(9, 13, 17, 20);
-                        graphDefinition += `style B8 fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                    activePaths.push('path-gw-v17');
+                    if (vrta >= 2.6) {
+                        activePaths.push('path-v17-v26ow', 'path-v26ow-shol');
+                        endNodeId = 'node-shol'; statusClass = 'active-red'; document.getElementById('text-shol').classList.replace('text-black', 'text-white');
+                    } else if (vrta >= 1.7) {
+                        activePaths.push('path-v17-v26ow', 'path-v26ow-hol');
+                        endNodeId = 'node-hol'; statusClass = 'active-amber';
+                    } else {
+                        activePaths.push('path-v17-nms2');
+                        endNodeId = 'node-nms2'; statusClass = 'active-green'; document.getElementById('text-nms2').classList.replace('text-black', 'text-white');
                     }
                 }
 
-            } else if (code.startsWith('4') && fleetType === 'NEO') {
-                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
-                graphDefinition += `A[Load Report Code: ${code}] --> B{Nz >= 2.06 or Ny >= 0.5?}\n`; 
-                graphDefinition += `B -- Yes --> C[RED ZONE<br>Severe Hard Landing]\n`; 
-                graphDefinition += `B -- No --> D{Nz >= 1.80 or Ny >= 0.45?}\n`; 
-                graphDefinition += `D -- Yes --> E[AMBER ZONE<br>Hard Landing]\n`; 
-                graphDefinition += `D -- No --> F[GREEN ZONE<br>Normal Landing]\n`; 
-
-                activeLinks.push(0);
-                if (status.includes('RED')) {
-                    activeLinks.push(1);
-                    graphDefinition += `style C fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                } else if (status.includes('AMBER')) {
-                    activeLinks.push(2, 3);
-                    graphDefinition += `style E fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
-                } else {
-                    activeLinks.push(2, 4);
-                    graphDefinition += `style F fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
+                // 화살표 활성화
+                activePaths.forEach(id => {
+                    let path = document.getElementById(id);
+                    if(path) { path.classList.add('active'); path.setAttribute('marker-end', 'url(#arrow-red)'); }
+                });
+                
+                // 도착 박스 색칠
+                if(endNodeId) {
+                    document.getElementById(endNodeId).classList.add(statusClass);
                 }
 
-            } else if (code === '5100' || code === '5200') {
-                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
-                graphDefinition += `A[Turbulence Report Code: ${code}] --> B{Clean Config<br>Flaps < 0.5?}\n`; 
-                graphDefinition += `B -- Yes --> C{VRTA <= -1.0g or VRTA >= 2.5g?}\n`; 
-                graphDefinition += `C -- Yes --> D[RED ZONE<br>INSPECTION REQUIRED]\n`; 
-                graphDefinition += `C -- No --> E[GREEN ZONE<br>NO INSPECTION REQUIRED]\n`; 
-                activeLinks.push(0, 1);
-                if (status.includes('RED')) {
-                    activeLinks.push(2); graphDefinition += `style D fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                } else {
-                    activeLinks.push(3); graphDefinition += `style E fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
+            } else {
+                ceoArea.style.display = 'none';
+                mermaidArea.style.display = 'block';
+                
+                let activeLinks = [];
+                let graphDefinition = '';
+                
+                if (code.startsWith('4') && fleetType === 'NEO') {
+                    graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
+                    graphDefinition += `A[Load Report Code: ${code}] --> B{Nz >= 2.06 or Ny >= 0.5?}\n`; 
+                    graphDefinition += `B -- Yes --> C[RED ZONE<br>Severe Hard Landing]\n`; 
+                    graphDefinition += `B -- No --> D{Nz >= 1.80 or Ny >= 0.45?}\n`; 
+                    graphDefinition += `D -- Yes --> E[AMBER ZONE<br>Hard Landing]\n`; 
+                    graphDefinition += `D -- No --> F[GREEN ZONE<br>Normal Landing]\n`; 
+
+                    activeLinks.push(0);
+                    if (status.includes('RED')) { activeLinks.push(1); graphDefinition += `style C fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`; } 
+                    else if (status.includes('AMBER')) { activeLinks.push(2, 3); graphDefinition += `style E fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`; } 
+                    else { activeLinks.push(2, 4); graphDefinition += `style F fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`; }
+                } else if (code === '5100' || code === '5200') {
+                    graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
+                    graphDefinition += `A[Turbulence Code: ${code}] --> B{Clean Config<br>Flaps < 0.5?}\n`; 
+                    graphDefinition += `B -- Yes --> C{VRTA <= -1.0g or VRTA >= 2.5g?}\n`; 
+                    graphDefinition += `C -- Yes --> D[RED ZONE<br>INSPECTION REQUIRED]\n`; 
+                    graphDefinition += `C -- No --> E[GREEN ZONE<br>NO INSPECTION REQUIRED]\n`; 
+                    activeLinks.push(0, 1);
+                    if (status.includes('RED')) { activeLinks.push(2); graphDefinition += `style D fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`; } 
+                    else { activeLinks.push(3); graphDefinition += `style E fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`; }
+                } else if (code === '5300') {
+                    graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
+                    graphDefinition += `A[Turbulence Code: ${code}] --> B{Flaps Extended?}\n`; 
+                    graphDefinition += `B -- Yes --> C{VRTA <= 0.0g or VRTA >= 2.0g?}\n`; 
+                    graphDefinition += `C -- Yes --> D[RED ZONE<br>INSPECTION REQUIRED]\n`; 
+                    graphDefinition += `C -- No --> E[GREEN ZONE<br>NO INSPECTION REQUIRED]\n`; 
+                    activeLinks.push(0, 1);
+                    if (status.includes('RED')) { activeLinks.push(2); graphDefinition += `style D fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`; } 
+                    else { activeLinks.push(3); graphDefinition += `style E fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`; }
+                } else if (code === '5600' || code === '5700') {
+                    graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
+                    graphDefinition += `A[High Lateral Code: ${code}] --> B{LATA > 0.41g?}\n`; 
+                    graphDefinition += `B -- Yes --> C[RED ZONE<br>Severe Lateral]\n`; 
+                    graphDefinition += `B -- No --> D{LATA >= 0.35g?}\n`; 
+                    graphDefinition += `D -- Yes --> E[AMBER ZONE<br>High Lateral]\n`; 
+                    graphDefinition += `D -- No --> F[GREEN ZONE<br>NO INSPECTION REQUIRED]\n`; 
+                    activeLinks.push(0);
+                    if (status.includes('RED')) { activeLinks.push(1); graphDefinition += `style C fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`; } 
+                    else if (status.includes('AMBER')) { activeLinks.push(2, 3); graphDefinition += `style E fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`; } 
+                    else { activeLinks.push(2, 4); graphDefinition += `style F fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`; }
                 }
-            } else if (code === '5300') {
-                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
-                graphDefinition += `A[Turbulence Report Code: ${code}] --> B{Flaps Extended?}\n`; 
-                graphDefinition += `B -- Yes --> C{VRTA <= 0.0g or VRTA >= 2.0g?}\n`; 
-                graphDefinition += `C -- Yes --> D[RED ZONE<br>INSPECTION REQUIRED]\n`; 
-                graphDefinition += `C -- No --> E[GREEN ZONE<br>NO INSPECTION REQUIRED]\n`; 
-                activeLinks.push(0, 1);
-                if (status.includes('RED')) {
-                    activeLinks.push(2); graphDefinition += `style D fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                } else {
-                    activeLinks.push(3); graphDefinition += `style E fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                }
-            } else if (code === '5600' || code === '5700') {
-                graphDefinition = `%%{init: {'flowchart': {'curve': 'step'}}}%%\nflowchart TD\n`;
-                graphDefinition += `A[High Lateral Code: ${code}] --> B{LATA > 0.41g?}\n`; 
-                graphDefinition += `B -- Yes --> C[RED ZONE<br>Severe Lateral]\n`; 
-                graphDefinition += `B -- No --> D{LATA >= 0.35g?}\n`; 
-                graphDefinition += `D -- Yes --> E[AMBER ZONE<br>High Lateral]\n`; 
-                graphDefinition += `D -- No --> F[GREEN ZONE<br>NO INSPECTION REQUIRED]\n`; 
-                activeLinks.push(0);
-                if (status.includes('RED')) {
-                    activeLinks.push(1); graphDefinition += `style C fill:#dc3545,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                } else if (status.includes('AMBER')) {
-                    activeLinks.push(2, 3); graphDefinition += `style E fill:#ffc107,stroke:#333,stroke-width:4px,color:#333;\n`;
-                } else {
-                    activeLinks.push(2, 4); graphDefinition += `style F fill:#28a745,stroke:#333,stroke-width:4px,color:#fff;\n`;
-                }
+                
+                if (activeLinks.length > 0) graphDefinition += `linkStyle ${activeLinks.join(',')} stroke:red,stroke-width:5px,color:red;\n`;
+                const flowchartDiv = document.getElementById('flowchart');
+                flowchartDiv.removeAttribute('data-processed');
+                flowchartDiv.innerHTML = graphDefinition;
+                mermaid.run({ querySelector: '.mermaid' });
             }
-            
-            // 지나온 길(Link)에 굵은 빨간색 화살표 적용
-            if (activeLinks.length > 0) {
-                graphDefinition += `linkStyle ${activeLinks.join(',')} stroke:red,stroke-width:5px,color:red;\n`;
-            }
-
-            const flowchartDiv = document.getElementById('flowchart');
-            flowchartDiv.removeAttribute('data-processed');
-            flowchartDiv.innerHTML = graphDefinition;
-            mermaid.run({ querySelector: '.mermaid' });
         }
     </script>
 </body>
