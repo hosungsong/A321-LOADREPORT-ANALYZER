@@ -1,4 +1,4 @@
-<!-- VERSION: AXIS_TITLE_PADDING_FIX_V2 -->
+<!-- VERSION: CEO_STRAIGHT_LINE_FIX_FINAL -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -94,78 +94,82 @@
 
             <h3 id="flowchartTitle" style="color: #1e3a8a; text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 15px;">🔀 Decision Flow Chart</h3>
             
+            <!-- 완벽하게 수직(Straight Down)으로 수정된 CEO 플로우차트 -->
             <div id="ceoFlowchartArea" class="svg-flowchart-container">
-                <svg width="950" height="480" viewBox="0 0 950 480">
+                <svg width="1000" height="480" viewBox="0 0 1000 480">
                     <defs>
                         <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" /></marker>
                         <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
                     </defs>
                     
-                    <polygon id="ceo-gw" class="box" points="475,20 625,60 475,100 325,60" />
-                    <text x="475" y="65" text-anchor="middle" class="text-black">GW &le; MLW</text>
+                    <polygon id="ceo-gw" class="box" points="520,20 760,60 520,100 280,60" />
+                    <text x="520" y="65" text-anchor="middle" class="text-black">GW &le; MLW</text>
                     
-                    <polygon id="ceo-v26" class="box" points="250,140 370,180 250,220 130,180" />
-                    <text x="250" y="185" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
+                    <polygon id="ceo-v26" class="box" points="280,140 400,180 280,220 160,180" />
+                    <text x="280" y="185" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
                     
-                    <polygon id="ceo-v17" class="box" points="700,140 820,180 700,220 580,180" />
-                    <text x="700" y="185" text-anchor="middle" class="text-black">VRTA &ge; 1.7 g</text>
+                    <polygon id="ceo-v17" class="box" points="760,140 880,180 760,220 640,180" />
+                    <text x="760" y="185" text-anchor="middle" class="text-black">VRTA &ge; 1.7 g</text>
 
-                    <polygon id="ceo-v286" class="box" points="130,260 210,300 130,340 50,300" />
-                    <text x="130" y="305" text-anchor="middle" class="text-black">VRTA &ge; 2.86 g</text>
+                    <polygon id="ceo-v286" class="box" points="160,260 240,300 160,340 80,300" />
+                    <text x="160" y="305" text-anchor="middle" class="text-black">VRTA &ge; 2.86 g</text>
 
-                    <rect id="ceo-nms1" class="box" x="300" y="280" width="140" height="40" />
-                    <text x="370" y="305" text-anchor="middle" class="text-black" id="ceo-nms1-txt">NO MORE STEPS</text>
-                    
-                    <polygon id="ceo-v26ow" class="box" points="580,260 660,300 580,340 500,300" />
-                    <text x="580" y="305" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
+                    <polygon id="ceo-v26ow" class="box" points="640,260 720,300 640,340 560,300" />
+                    <text x="640" y="305" text-anchor="middle" class="text-black">VRTA &ge; 2.6 g</text>
 
-                    <rect id="ceo-nms2" class="box" x="750" y="280" width="140" height="40" />
-                    <text x="820" y="305" text-anchor="middle" class="text-black" id="ceo-nms2-txt">NO MORE STEPS</text>
+                    <rect id="ceo-nms1" class="box" x="335" y="280" width="130" height="40" />
+                    <text x="400" y="305" text-anchor="middle" class="text-black" id="ceo-nms1-txt">NO MORE STEPS</text>
+                    
+                    <rect id="ceo-nms2" class="box" x="815" y="280" width="130" height="40" />
+                    <text x="880" y="305" text-anchor="middle" class="text-black" id="ceo-nms2-txt">NO MORE STEPS</text>
 
-                    <rect id="ceo-shl" class="box" x="10" y="400" width="110" height="40" />
-                    <text x="65" y="415" text-anchor="middle" class="text-black" id="ceo-shl-txt"><tspan x="65" dy="0">SEVERE</tspan><tspan x="65" dy="14">HARD LANDING</tspan></text>
+                    <!-- 중앙 정렬을 완벽하게 맞춘 하단 박스들 -->
+                    <rect id="ceo-shl" class="box" x="15" y="400" width="130" height="45" />
+                    <text x="80" y="418" text-anchor="middle" class="text-black" id="ceo-shl-txt"><tspan x="80" dy="0">SEVERE</tspan><tspan x="80" dy="14">HARD LANDING</tspan></text>
 
-                    <rect id="ceo-hl" class="box" x="150" y="400" width="120" height="40" />
-                    <text x="210" y="425" text-anchor="middle" class="text-black" id="ceo-hl-txt">HARD LANDING</text>
+                    <rect id="ceo-hl" class="box" x="180" y="400" width="120" height="45" />
+                    <text x="240" y="427" text-anchor="middle" class="text-black" id="ceo-hl-txt">HARD LANDING</text>
 
-                    <rect id="ceo-shol" class="box" x="440" y="400" width="130" height="40" />
-                    <text x="505" y="415" text-anchor="middle" class="text-black" id="ceo-shol-txt"><tspan x="505" dy="0">SEVERE HARD</tspan><tspan x="505" dy="14">OVERWEIGHT</tspan></text>
+                    <rect id="ceo-shol" class="box" x="495" y="400" width="130" height="45" />
+                    <text x="560" y="418" text-anchor="middle" class="text-black" id="ceo-shol-txt"><tspan x="560" dy="0">SEVERE HARD</tspan><tspan x="560" dy="14">OVERWEIGHT</tspan></text>
 
-                    <rect id="ceo-hol" class="box" x="590" y="400" width="130" height="40" />
-                    <text x="655" y="415" text-anchor="middle" class="text-black" id="ceo-hol-txt"><tspan x="655" dy="0">HARD</tspan><tspan x="655" dy="14">OVERWEIGHT</tspan></text>
+                    <rect id="ceo-hol" class="box" x="660" y="400" width="120" height="45" />
+                    <text x="720" y="418" text-anchor="middle" class="text-black" id="ceo-hol-txt"><tspan x="720" dy="0">HARD</tspan><tspan x="720" dy="14">OVERWEIGHT</tspan></text>
 
-                    <path id="ceo-p1" class="path" d="M 325 60 L 250 60 L 250 140" marker-end="url(#arrow-gray)" />
-                    <text x="280" y="50" class="text-black">YES</text>
+                    <!-- 수직으로 쫙쫙 뻗은 완벽한 선(Path) -->
+                    <path id="ceo-p1" class="path" d="M 280 60 L 280 140" marker-end="url(#arrow-gray)" />
+                    <text x="260" y="100" class="text-black">YES</text>
                     
-                    <path id="ceo-p2" class="path" d="M 625 60 L 700 60 L 700 140" marker-end="url(#arrow-gray)" />
-                    <text x="670" y="50" class="text-black">NO</text>
+                    <path id="ceo-p2" class="path" d="M 760 60 L 760 140" marker-end="url(#arrow-gray)" />
+                    <text x="780" y="100" class="text-black">NO</text>
                     
-                    <path id="ceo-p3" class="path" d="M 130 180 L 130 260" marker-end="url(#arrow-gray)" />
-                    <text x="110" y="220" class="text-black">YES</text>
+                    <path id="ceo-p3" class="path" d="M 160 180 L 160 260" marker-end="url(#arrow-gray)" />
+                    <text x="140" y="220" class="text-black">YES</text>
                     
-                    <path id="ceo-p4" class="path" d="M 370 180 L 370 280" marker-end="url(#arrow-gray)" />
-                    <text x="390" y="220" class="text-black">NO</text>
+                    <path id="ceo-p4" class="path" d="M 400 180 L 400 280" marker-end="url(#arrow-gray)" />
+                    <text x="420" y="230" class="text-black">NO</text>
                     
-                    <path id="ceo-p5" class="path" d="M 580 180 L 580 260" marker-end="url(#arrow-gray)" />
-                    <text x="560" y="220" class="text-black">YES</text>
+                    <path id="ceo-p5" class="path" d="M 640 180 L 640 260" marker-end="url(#arrow-gray)" />
+                    <text x="620" y="220" class="text-black">YES</text>
                     
-                    <path id="ceo-p6" class="path" d="M 820 180 L 820 280" marker-end="url(#arrow-gray)" />
-                    <text x="840" y="220" class="text-black">NO</text>
+                    <path id="ceo-p6" class="path" d="M 880 180 L 880 280" marker-end="url(#arrow-gray)" />
+                    <text x="900" y="230" class="text-black">NO</text>
                     
-                    <path id="ceo-p7" class="path" d="M 50 300 L 50 350 L 65 350 L 65 400" marker-end="url(#arrow-gray)" />
-                    <text x="30" y="325" class="text-black">YES</text>
+                    <path id="ceo-p7" class="path" d="M 80 300 L 80 400" marker-end="url(#arrow-gray)" />
+                    <text x="60" y="350" class="text-black">YES</text>
                     
-                    <path id="ceo-p8" class="path" d="M 210 300 L 210 400" marker-end="url(#arrow-gray)" />
-                    <text x="230" y="325" class="text-black">NO</text>
+                    <path id="ceo-p8" class="path" d="M 240 300 L 240 400" marker-end="url(#arrow-gray)" />
+                    <text x="260" y="350" class="text-black">NO</text>
                     
-                    <path id="ceo-p9" class="path" d="M 500 300 L 500 350 L 505 350 L 505 400" marker-end="url(#arrow-gray)" />
-                    <text x="480" y="325" class="text-black">YES</text>
+                    <path id="ceo-p9" class="path" d="M 560 300 L 560 400" marker-end="url(#arrow-gray)" />
+                    <text x="540" y="350" class="text-black">YES</text>
                     
-                    <path id="ceo-p10" class="path" d="M 660 300 L 660 350 L 655 350 L 655 400" marker-end="url(#arrow-gray)" />
-                    <text x="680" y="325" class="text-black">NO</text>
+                    <path id="ceo-p10" class="path" d="M 720 300 L 720 400" marker-end="url(#arrow-gray)" />
+                    <text x="740" y="350" class="text-black">NO</text>
                 </svg>
             </div>
 
+            <!-- NEO 차트 (유지) -->
             <div id="neoFlowchartArea" class="svg-flowchart-container">
                 <svg width="900" height="550" viewBox="0 0 900 550">
                     <defs>
@@ -212,6 +216,7 @@
                 </svg>
             </div>
 
+            <!-- 난기류(Turbulence) 차트 (유지) -->
             <div id="turbFlowchartArea" class="svg-flowchart-container">
                 <svg width="850" height="500" viewBox="0 0 850 500">
                     <defs>
@@ -316,7 +321,7 @@
                         if(customLabel) {
                             ctx.font = 'bold 15px Arial';
                             
-                            // 글자 잘림 방지: 스마트 경계 감지 로직 (좌우 짤림 완벽 방어)
+                            // 텍스트 좌우 짤림 완벽 방어 로직 (스마트 경계 감지)
                             let align = 'center';
                             let targetX = x;
                             
@@ -330,7 +335,7 @@
 
                             ctx.textAlign = align;
                             
-                            // MIN 텍스트는 점 아래로, MAX나 일반값은 점 위로 띄움
+                            // 상단 짤림 방지를 위해 캔버스 패딩을 줬으므로 안전하게 표시 가능
                             let yOffset = customLabel.includes('MIN') ? 25 : -18;
                             
                             ctx.strokeStyle = 'white';
@@ -437,6 +442,7 @@
             
             document.getElementById('triggerCode').innerText = data.trigger_code;
             
+            // 1000, 7000번 코드에 대한 추가 안내 문구
             const remarkEl = document.getElementById('triggerRemark');
             if (data.trigger_code === '1000') {
                 remarkEl.innerText = "(Trigger code 1000 is a manual report request. It can not be used for a confirmation of a hard/overweight landing or excessive turbulence.)";
@@ -496,7 +502,7 @@
                 chartData = { datasets: [{ data: [{x: gw > 0 ? gw : 150000, y: nz, label: pointLabel}], pointRadius: 0 }] };
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
-                    layout: { padding: { top: 20, left: 10, right: 10, bottom: 10 } },
+                    layout: { padding: { top: 40, left: 20, right: 20, bottom: 20 } },
                     plugins: { 
                         legend: { display: false }, tooltip: { enabled: false },
                         annotation: { 
@@ -513,8 +519,8 @@
                         } 
                     },
                     scales: {
-                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'AIRCRAFT WEIGHT (LBS)', font: {weight: 'bold'}, padding: {top: 10}}, min: 100000, max: 220000 },
-                        y: { title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}, padding: {bottom: 10}}, min: 0, max: 4.0 }
+                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'AIRCRAFT WEIGHT (LBS)', font: {weight: 'bold'}, padding: {top: 15}}, min: 100000, max: 220000, ticks: { padding: 10 } },
+                        y: { title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}, padding: {bottom: 15}}, min: 0, max: 4.0 }
                     }
                 };
             } else if (fleet === 'NEO' && code.startsWith('4')) {
@@ -525,7 +531,7 @@
                 chartData = { datasets: [{ data: [{x: ny, y: nz, label: pointLabel}], pointRadius: 0 }] };
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
-                    layout: { padding: { top: 20, left: 10, right: 10, bottom: 10 } },
+                    layout: { padding: { top: 40, left: 20, right: 20, bottom: 20 } },
                     plugins: { 
                         legend: { display: false }, tooltip: { enabled: false }, 
                         annotation: { 
@@ -538,13 +544,13 @@
                         } 
                     },
                     scales: { 
-                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'Ny (측면) g', font: {weight: 'bold'}, padding: {top: 10}}, min: 0, max: 0.6 }, 
-                        y: { title: {display: true, text: 'Nz (수직) g', font: {weight: 'bold'}, padding: {bottom: 10}}, min: 0, max: 2.5 } 
+                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'Ny (측면) g', font: {weight: 'bold'}, padding: {top: 15}}, min: 0, max: 0.6, ticks: { padding: 10 } }, 
+                        y: { title: {display: true, text: 'Nz (수직) g', font: {weight: 'bold'}, padding: {bottom: 15}}, min: 0, max: 2.5 } 
                     }
                 };
             } else if (code.startsWith('5')) {
                 if (code === '5600' || code === '5700') {
-                    // 5600, 5700 가로형 띠 차트 (높이 160px로 증가, 숨통 틔움)
+                    // 높이(Height) 160px로 여유를 주어 LATA(g) 텍스트 겹침 방지
                     chartDiv.style.height = '160px'; 
                     document.getElementById('chartTitle').innerText = '📊 High Lateral Limit (AMM TASK 05-51-44-200-001-A)';
                     pointLabel = `LATA: ${lata}g`;
@@ -566,7 +572,7 @@
                         scales: { 
                             x: { 
                                 type: 'linear', position: 'bottom', 
-                                title: {display: true, text: 'LATA (g)', font: {weight: 'bold'}, padding: {top: 20}}, 
+                                title: {display: true, text: 'LATA (g)', font: {weight: 'bold'}, padding: {top: 15}}, 
                                 ticks: { padding: 10 },
                                 min: 0, max: 0.6 
                             }, 
@@ -574,7 +580,7 @@
                         }
                     };
                 } else {
-                    // 난기류 1D 가로형 띠 차트 (높이 160px로 증가)
+                    // 높이 160px로 여유 확보
                     chartDiv.style.height = '160px'; 
                     let isClean = (code === '5100' || code === '5200');
                     document.getElementById('chartTitle').innerText = isClean ? '📊 Turbulence Limit (CLEAN CONFIGURATION)' : '📊 Turbulence Limit (FLAPS AND/OR SLATS EXTENDED)';
@@ -609,7 +615,7 @@
                         scales: { 
                             x: { 
                                 type: 'linear', position: 'bottom', 
-                                title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}, padding: {top: 20}}, 
+                                title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}, padding: {top: 15}}, 
                                 ticks: { padding: 10 },
                                 min: -2.0, max: 3.5 
                             }, 
