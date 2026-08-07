@@ -1,4 +1,4 @@
-<!-- VERSION: AMM_TASK_5000_SVG_UPDATE -->
+<!-- VERSION: AMM_TASK_5000_SVG_UPDATE_THIN_CHART -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -204,7 +204,7 @@
                         <marker id="arrow-red-turb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
                     </defs>
 
-                    <!-- Top Diamond -->
+                    <!-- Top Diamond (CLEAN) -->
                     <polygon id="turb-d1" class="box" points="425,10 525,70 425,130 325,70" />
                     <text x="425" y="45" text-anchor="middle" class="text-black">
                         <tspan x="425" dy="0">CLEAN</tspan>
@@ -214,7 +214,7 @@
                         <tspan x="425" dy="14">&lt; 0.5&deg;)</tspan>
                     </text>
 
-                    <!-- Left Diamond -->
+                    <!-- Left Diamond (CLEAN Limits) -->
                     <polygon id="turb-d2" class="box" points="250,190 350,240 250,290 150,240" />
                     <text x="250" y="225" text-anchor="middle" class="text-black">
                         <tspan x="250" dy="0">VRTA &le; -1 g</tspan>
@@ -222,7 +222,7 @@
                         <tspan x="250" dy="14">VRTA &ge; +2.5 g</tspan>
                     </text>
 
-                    <!-- Right Diamond -->
+                    <!-- Right Diamond (FLAPS Limits) -->
                     <polygon id="turb-d3" class="box" points="600,190 700,240 600,290 500,240" />
                     <text x="600" y="225" text-anchor="middle" class="text-black">
                         <tspan x="600" dy="0">VRTA &le; 0 g</tspan>
@@ -230,7 +230,7 @@
                         <tspan x="600" dy="14">VRTA &ge; +2 g</tspan>
                     </text>
 
-                    <!-- NO Boxes -->
+                    <!-- NO Boxes (GREEN) -->
                     <rect id="turb-no1" class="box" x="370" y="320" width="140" height="45" />
                     <text x="440" y="342" text-anchor="middle" class="text-black" id="turb-no1-txt">
                         <tspan x="440" dy="0">NO INSPECTION</tspan>
@@ -243,11 +243,11 @@
                         <tspan x="770" dy="14">REQUIRED</tspan>
                     </text>
 
-                    <!-- YES Bar -->
+                    <!-- YES Bar (RED) -->
                     <rect id="turb-yes-bar" class="box" x="50" y="420" width="750" height="40" />
                     <text x="425" y="445" text-anchor="middle" class="text-black" id="turb-yes-bar-txt">DO THE INSPECTIONS GIVEN IN AMM 05-51-17</text>
 
-                    <!-- Paths -->
+                    <!-- Paths for Turbulence -->
                     <path id="turb-p-clean-yes" class="path path-turb" d="M 425 130 L 425 160 L 250 160 L 250 190" marker-end="url(#arrow-gray-turb)" />
                     <text x="337" y="155" class="text-black">YES</text>
 
@@ -338,7 +338,7 @@
                             ctx.font = 'bold 15px Arial';
                             ctx.textAlign = 'center';
                             
-                            // 겹침 방지: MIN은 점 아래, MAX는 점 위에 강제 표시
+                            // 글자 겹침 방지: MIN은 점 아래, MAX는 점 위에 무조건 분리해서 표시
                             let yOffset = customLabel.includes('MIN') ? 25 : -18;
                             
                             ctx.strokeStyle = 'white';
@@ -578,9 +578,10 @@
                             annotation: { 
                                 drawTime: 'beforeDatasetsDraw', 
                                 annotations: { 
-                                    boxLeftRed: { type: 'box', xMin: -3.0, xMax: minLim, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: 'black' },
-                                    boxRightRed: { type: 'box', xMin: maxLim, xMax: 4.5, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: 'black' },
-                                    boxGreen: { type: 'box', xMin: minLim, xMax: maxLim, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(16, 185, 129, 1.0)', borderWidth: 1, borderColor: 'black' }
+                                    // yMin, yMax를 0.35 ~ 0.65로 축소시켜 두께를 얇은 띠(Band) 형태로 압축
+                                    boxLeftRed: { type: 'box', xMin: -3.0, xMax: minLim, yMin: 0.35, yMax: 0.65, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxRightRed: { type: 'box', xMin: maxLim, xMax: 4.5, yMin: 0.35, yMax: 0.65, backgroundColor: 'rgba(239, 68, 68, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxGreen: { type: 'box', xMin: minLim, xMax: maxLim, yMin: 0.35, yMax: 0.65, backgroundColor: 'rgba(16, 185, 129, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
                                 } 
                             } 
                         },
@@ -615,6 +616,8 @@
             let status = data.status;
 
             const flowchartTitleEl = document.getElementById('flowchartTitle');
+            
+            // 5000번대(Turbulence & High Lateral)는 공통 AMM TASK 번호 할당
             if (code.startsWith('5')) {
                 flowchartTitleEl.innerText = '🔀 Decision Flow Chart (AMM TASK 05-51-17-200-001-A)';
             } else if (fleet === 'NEO') {
