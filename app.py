@@ -26,9 +26,14 @@ async def process_ocr(file: UploadFile=File(...)):
 
 def parse_g(v_str):
     try:
-        v=float(v_str)
-        if '.' not in v_str: return v/100.0
-        return v
+        # [-+]? 를 추가하여 음수/양수 부호를 인식할 수 있도록 변경했습니다.
+        match = re.match(r'^([-+]?\d*\.?\d+)', v_str)
+        if match:
+            v = float(match.group(1))
+            if '.' not in v_str:
+                return v / 100.0
+            return v
+        return 0.0
     except ValueError: return 0.0
 
 def parse_report_data(text):
@@ -138,8 +143,9 @@ def analyze_report(req: AnalyzeRequest):
                     
         elif trigger_code in ["5600", "5700"]:
             lata=0.0
-            if "S4" in lines_dict and len(lines_dict["S4"])>=1: lata=parse_g(lines_dict["S4"][0])
-            kpi_data["S4"]={"LATA": lata}
+            # S4가 아닌 E1 라인의 첫 번째 값을 가져오고, abs()를 씌워 무조건 양수(절대값)로 만듭니다.
+            if "E1" in lines_dict and len(lines_dict["E1"])>=1: lata=abs(parse_g(lines_dict["E1"][0]))
+            kpi_data["E1"]={"LATA": lata}
             if lata>0.41: status, reason="RED", f"Severe High Lateral\n- LATA: {lata}g\n- LIMIT: > 0.41g"
             elif lata>=0.35: status, reason="AMBER", f"High Lateral\n- LATA: {lata}g\n- LIMIT: >= 0.35g"
             else: status, reason="GREEN", f"Normal\n- LATA: {lata}g"
