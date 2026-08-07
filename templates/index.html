@@ -1,4 +1,4 @@
-<!-- VERSION: AXIS_TITLE_PADDING_FIX -->
+<!-- VERSION: AXIS_TITLE_PADDING_FIX_V2 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -544,14 +544,14 @@
                 };
             } else if (code.startsWith('5')) {
                 if (code === '5600' || code === '5700') {
-                    // 5600, 5700 가로형 띠 차트 (상단 여백 강제 확보)
-                    chartDiv.style.height = '120px'; 
+                    // 5600, 5700 가로형 띠 차트 (높이 160px로 증가, 숨통 틔움)
+                    chartDiv.style.height = '160px'; 
                     document.getElementById('chartTitle').innerText = '📊 High Lateral Limit (AMM TASK 05-51-44-200-001-A)';
                     pointLabel = `LATA: ${lata}g`;
                     chartData = { datasets: [{ data: [{x: lata, y: 0.5, label: pointLabel}], pointRadius: 0 }] };
                     chartOptions = {
                         responsive: true, maintainAspectRatio: false,
-                        layout: { padding: { top: 40, left: 20, right: 20, bottom: 10 } },
+                        layout: { padding: { top: 40, left: 20, right: 20, bottom: 20 } },
                         plugins: { 
                             legend: { display: false }, tooltip: { enabled: false }, 
                             annotation: { 
@@ -564,14 +564,18 @@
                             } 
                         },
                         scales: { 
-                            // padding: {top: 15} 를 주어 축 숫자와 글씨 겹침 방지
-                            x: { type: 'linear', position: 'bottom', title: {display: true, text: 'LATA (g)', font: {weight: 'bold'}, padding: {top: 15}}, min: 0, max: 0.6 }, 
+                            x: { 
+                                type: 'linear', position: 'bottom', 
+                                title: {display: true, text: 'LATA (g)', font: {weight: 'bold'}, padding: {top: 20}}, 
+                                ticks: { padding: 10 },
+                                min: 0, max: 0.6 
+                            }, 
                             y: { display: false, min: 0, max: 1.0 } 
                         }
                     };
                 } else {
-                    // 난기류 1D 가로형 띠 차트 (상단 여백 강제 확보)
-                    chartDiv.style.height = '120px'; 
+                    // 난기류 1D 가로형 띠 차트 (높이 160px로 증가)
+                    chartDiv.style.height = '160px'; 
                     let isClean = (code === '5100' || code === '5200');
                     document.getElementById('chartTitle').innerText = isClean ? '📊 Turbulence Limit (CLEAN CONFIGURATION)' : '📊 Turbulence Limit (FLAPS AND/OR SLATS EXTENDED)';
                     
@@ -590,7 +594,7 @@
 
                     chartOptions = {
                         responsive: true, maintainAspectRatio: false,
-                        layout: { padding: { top: 40, left: 20, right: 20, bottom: 10 } },
+                        layout: { padding: { top: 40, left: 20, right: 20, bottom: 20 } },
                         plugins: { 
                             legend: { display: false }, tooltip: { enabled: false }, 
                             annotation: { 
@@ -603,8 +607,12 @@
                             } 
                         },
                         scales: { 
-                            // padding: {top: 15} 를 주어 축 숫자와 글씨 겹침 방지
-                            x: { type: 'linear', position: 'bottom', title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}, padding: {top: 15}}, min: -2.0, max: 3.5 }, 
+                            x: { 
+                                type: 'linear', position: 'bottom', 
+                                title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}, padding: {top: 20}}, 
+                                ticks: { padding: 10 },
+                                min: -2.0, max: 3.5 
+                            }, 
                             y: { display: false, min: 0, max: 1.0 }
                         }
                     };
