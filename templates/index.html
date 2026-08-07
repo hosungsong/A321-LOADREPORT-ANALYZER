@@ -1,4 +1,4 @@
-<!-- VERSION: TOP_CLIPPING_FIX_V3 -->
+<!-- VERSION: AXIS_TITLE_PADDING_FIX -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -94,7 +94,6 @@
 
             <h3 id="flowchartTitle" style="color: #1e3a8a; text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 15px;">🔀 Decision Flow Chart</h3>
             
-            <!-- CEO 플로우차트 (완벽한 트리 구조) -->
             <div id="ceoFlowchartArea" class="svg-flowchart-container">
                 <svg width="950" height="480" viewBox="0 0 950 480">
                     <defs>
@@ -135,7 +134,6 @@
                     <rect id="ceo-hol" class="box" x="590" y="400" width="130" height="40" />
                     <text x="655" y="415" text-anchor="middle" class="text-black" id="ceo-hol-txt"><tspan x="655" dy="0">HARD</tspan><tspan x="655" dy="14">OVERWEIGHT</tspan></text>
 
-                    <!-- 선 교차 방지 및 수직 구조화된 Path -->
                     <path id="ceo-p1" class="path" d="M 325 60 L 250 60 L 250 140" marker-end="url(#arrow-gray)" />
                     <text x="280" y="50" class="text-black">YES</text>
                     
@@ -168,7 +166,6 @@
                 </svg>
             </div>
 
-            <!-- NEO 플로우차트 -->
             <div id="neoFlowchartArea" class="svg-flowchart-container">
                 <svg width="900" height="550" viewBox="0 0 900 550">
                     <defs>
@@ -215,7 +212,6 @@
                 </svg>
             </div>
 
-            <!-- 난기류 5000번대 플로우차트 -->
             <div id="turbFlowchartArea" class="svg-flowchart-container">
                 <svg width="850" height="500" viewBox="0 0 850 500">
                     <defs>
@@ -326,10 +322,10 @@
                             
                             if (chartArea && x < chartArea.left + 40) {
                                 align = 'left';
-                                targetX = x + 12; // 0g 등 너무 왼쪽일 때 우측으로 밈
+                                targetX = x + 12; 
                             } else if (chartArea && x > chartArea.right - 40) {
                                 align = 'right';
-                                targetX = x - 12; // 너무 오른쪽일 때 좌측으로 밈
+                                targetX = x - 12; 
                             }
 
                             ctx.textAlign = align;
@@ -517,8 +513,8 @@
                         } 
                     },
                     scales: {
-                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'AIRCRAFT WEIGHT (LBS)', font: {weight: 'bold'}}, min: 100000, max: 220000 },
-                        y: { title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}}, min: 0, max: 4.0 }
+                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'AIRCRAFT WEIGHT (LBS)', font: {weight: 'bold'}, padding: {top: 10}}, min: 100000, max: 220000 },
+                        y: { title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}, padding: {bottom: 10}}, min: 0, max: 4.0 }
                     }
                 };
             } else if (fleet === 'NEO' && code.startsWith('4')) {
@@ -542,8 +538,8 @@
                         } 
                     },
                     scales: { 
-                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'Ny (측면) g', font: {weight: 'bold'}}, min: 0, max: 0.6 }, 
-                        y: { title: {display: true, text: 'Nz (수직) g', font: {weight: 'bold'}}, min: 0, max: 2.5 } 
+                        x: { type: 'linear', position: 'bottom', title: {display: true, text: 'Ny (측면) g', font: {weight: 'bold'}, padding: {top: 10}}, min: 0, max: 0.6 }, 
+                        y: { title: {display: true, text: 'Nz (수직) g', font: {weight: 'bold'}, padding: {bottom: 10}}, min: 0, max: 2.5 } 
                     }
                 };
             } else if (code.startsWith('5')) {
@@ -555,7 +551,6 @@
                     chartData = { datasets: [{ data: [{x: lata, y: 0.5, label: pointLabel}], pointRadius: 0 }] };
                     chartOptions = {
                         responsive: true, maintainAspectRatio: false,
-                        // 천장 충돌(위쪽 글자 짤림) 방지를 위해 top 패딩을 40px로 넉넉하게 주입
                         layout: { padding: { top: 40, left: 20, right: 20, bottom: 10 } },
                         plugins: { 
                             legend: { display: false }, tooltip: { enabled: false }, 
@@ -569,7 +564,8 @@
                             } 
                         },
                         scales: { 
-                            x: { type: 'linear', position: 'bottom', title: {display: true, text: 'LATA (g)', font: {weight: 'bold'}}, min: 0, max: 0.6 }, 
+                            // padding: {top: 15} 를 주어 축 숫자와 글씨 겹침 방지
+                            x: { type: 'linear', position: 'bottom', title: {display: true, text: 'LATA (g)', font: {weight: 'bold'}, padding: {top: 15}}, min: 0, max: 0.6 }, 
                             y: { display: false, min: 0, max: 1.0 } 
                         }
                     };
@@ -594,7 +590,6 @@
 
                     chartOptions = {
                         responsive: true, maintainAspectRatio: false,
-                        // 천장 충돌(위쪽 글자 짤림) 방지를 위해 top 패딩을 40px로 넉넉하게 주입
                         layout: { padding: { top: 40, left: 20, right: 20, bottom: 10 } },
                         plugins: { 
                             legend: { display: false }, tooltip: { enabled: false }, 
@@ -608,7 +603,8 @@
                             } 
                         },
                         scales: { 
-                            x: { type: 'linear', position: 'bottom', title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}}, min: -2.0, max: 3.5 }, 
+                            // padding: {top: 15} 를 주어 축 숫자와 글씨 겹침 방지
+                            x: { type: 'linear', position: 'bottom', title: {display: true, text: 'VRTA (g)', font: {weight: 'bold'}, padding: {top: 15}}, min: -2.0, max: 3.5 }, 
                             y: { display: false, min: 0, max: 1.0 }
                         }
                     };
@@ -742,9 +738,6 @@
                     document.getElementById(endNodeId).classList.add(statusClass); 
                     document.getElementById(endNodeId+'-txt').classList.replace('text-black', 'text-white'); 
                 }
-            
-            } else if (code === '5600' || code === '5700') {
-                // 플로우차트 구역 미표시
             }
         }
     </script>
