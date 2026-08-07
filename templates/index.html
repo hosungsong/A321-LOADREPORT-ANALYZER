@@ -1,4 +1,4 @@
-<!-- VERSION: SMART_BOUNDARY_TEXT_FIX -->
+<!-- VERSION: TOP_CLIPPING_FIX_V3 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -135,7 +135,7 @@
                     <rect id="ceo-hol" class="box" x="590" y="400" width="130" height="40" />
                     <text x="655" y="415" text-anchor="middle" class="text-black" id="ceo-hol-txt"><tspan x="655" dy="0">HARD</tspan><tspan x="655" dy="14">OVERWEIGHT</tspan></text>
 
-                    <!-- 선 교차 방지 로직이 들어간 Path -->
+                    <!-- 선 교차 방지 및 수직 구조화된 Path -->
                     <path id="ceo-p1" class="path" d="M 325 60 L 250 60 L 250 140" marker-end="url(#arrow-gray)" />
                     <text x="280" y="50" class="text-black">YES</text>
                     
@@ -320,20 +320,21 @@
                         if(customLabel) {
                             ctx.font = 'bold 15px Arial';
                             
-                            // 글자 잘림 방지: 스마트 경계 감지 로직
+                            // 글자 잘림 방지: 스마트 경계 감지 로직 (좌우 짤림 완벽 방어)
                             let align = 'center';
                             let targetX = x;
                             
                             if (chartArea && x < chartArea.left + 40) {
                                 align = 'left';
-                                targetX = x + 12; // 왼쪽 모서리면 텍스트를 우측으로 밉니다.
+                                targetX = x + 12; // 0g 등 너무 왼쪽일 때 우측으로 밈
                             } else if (chartArea && x > chartArea.right - 40) {
                                 align = 'right';
-                                targetX = x - 12; // 오른쪽 모서리면 텍스트를 좌측으로 밉니다.
+                                targetX = x - 12; // 너무 오른쪽일 때 좌측으로 밈
                             }
 
                             ctx.textAlign = align;
                             
+                            // MIN 텍스트는 점 아래로, MAX나 일반값은 점 위로 띄움
                             let yOffset = customLabel.includes('MIN') ? 25 : -18;
                             
                             ctx.strokeStyle = 'white';
@@ -499,6 +500,7 @@
                 chartData = { datasets: [{ data: [{x: gw > 0 ? gw : 150000, y: nz, label: pointLabel}], pointRadius: 0 }] };
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 20, left: 10, right: 10, bottom: 10 } },
                     plugins: { 
                         legend: { display: false }, tooltip: { enabled: false },
                         annotation: { 
@@ -527,6 +529,7 @@
                 chartData = { datasets: [{ data: [{x: ny, y: nz, label: pointLabel}], pointRadius: 0 }] };
                 chartOptions = {
                     responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 20, left: 10, right: 10, bottom: 10 } },
                     plugins: { 
                         legend: { display: false }, tooltip: { enabled: false }, 
                         annotation: { 
@@ -545,21 +548,23 @@
                 };
             } else if (code.startsWith('5')) {
                 if (code === '5600' || code === '5700') {
-                    // 5600, 5700 가로형 띠 차트
-                    chartDiv.style.height = '100px'; 
+                    // 5600, 5700 가로형 띠 차트 (상단 여백 강제 확보)
+                    chartDiv.style.height = '120px'; 
                     document.getElementById('chartTitle').innerText = '📊 High Lateral Limit (AMM TASK 05-51-44-200-001-A)';
                     pointLabel = `LATA: ${lata}g`;
                     chartData = { datasets: [{ data: [{x: lata, y: 0.5, label: pointLabel}], pointRadius: 0 }] };
                     chartOptions = {
                         responsive: true, maintainAspectRatio: false,
+                        // 천장 충돌(위쪽 글자 짤림) 방지를 위해 top 패딩을 40px로 넉넉하게 주입
+                        layout: { padding: { top: 40, left: 20, right: 20, bottom: 10 } },
                         plugins: { 
                             legend: { display: false }, tooltip: { enabled: false }, 
                             annotation: { 
                                 drawTime: 'beforeDatasetsDraw', 
                                 annotations: { 
-                                    boxGreen: { type: 'box', xMin: 0, xMax: 0.35, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(40, 167, 69, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
-                                    boxAmber: { type: 'box', xMin: 0.35, xMax: 0.41, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(255, 193, 7, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
-                                    boxRed: { type: 'box', xMin: 0.41, xMax: 0.6, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(220, 53, 69, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
+                                    boxGreen: { type: 'box', xMin: 0, xMax: 0.35, yMin: 0.3, yMax: 0.7, backgroundColor: 'rgba(76, 175, 80, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxAmber: { type: 'box', xMin: 0.35, xMax: 0.41, yMin: 0.3, yMax: 0.7, backgroundColor: 'rgba(255, 193, 7, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxRed: { type: 'box', xMin: 0.41, xMax: 0.6, yMin: 0.3, yMax: 0.7, backgroundColor: 'rgba(244, 67, 54, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
                                 } 
                             } 
                         },
@@ -569,8 +574,8 @@
                         }
                     };
                 } else {
-                    // 난기류 1D 가로형 띠 차트
-                    chartDiv.style.height = '100px'; 
+                    // 난기류 1D 가로형 띠 차트 (상단 여백 강제 확보)
+                    chartDiv.style.height = '120px'; 
                     let isClean = (code === '5100' || code === '5200');
                     document.getElementById('chartTitle').innerText = isClean ? '📊 Turbulence Limit (CLEAN CONFIGURATION)' : '📊 Turbulence Limit (FLAPS AND/OR SLATS EXTENDED)';
                     
@@ -589,14 +594,16 @@
 
                     chartOptions = {
                         responsive: true, maintainAspectRatio: false,
+                        // 천장 충돌(위쪽 글자 짤림) 방지를 위해 top 패딩을 40px로 넉넉하게 주입
+                        layout: { padding: { top: 40, left: 20, right: 20, bottom: 10 } },
                         plugins: { 
                             legend: { display: false }, tooltip: { enabled: false }, 
                             annotation: { 
                                 drawTime: 'beforeDatasetsDraw', 
                                 annotations: { 
-                                    boxLeftRed: { type: 'box', xMin: -3.0, xMax: minLim, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(220, 53, 69, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
-                                    boxRightRed: { type: 'box', xMin: maxLim, xMax: 4.5, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(220, 53, 69, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
-                                    boxGreen: { type: 'box', xMin: minLim, xMax: maxLim, yMin: 0, yMax: 1.0, backgroundColor: 'rgba(40, 167, 69, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
+                                    boxLeftRed: { type: 'box', xMin: -3.0, xMax: minLim, yMin: 0.3, yMax: 0.7, backgroundColor: 'rgba(220, 53, 69, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxRightRed: { type: 'box', xMin: maxLim, xMax: 4.5, yMin: 0.3, yMax: 0.7, backgroundColor: 'rgba(220, 53, 69, 1.0)', borderWidth: 1, borderColor: '#1f2937' },
+                                    boxGreen: { type: 'box', xMin: minLim, xMax: maxLim, yMin: 0.3, yMax: 0.7, backgroundColor: 'rgba(40, 167, 69, 1.0)', borderWidth: 1, borderColor: '#1f2937' }
                                 } 
                             } 
                         },
