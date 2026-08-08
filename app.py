@@ -26,14 +26,9 @@ async def process_ocr(file: UploadFile=File(...)):
 
 def parse_g(v_str):
     try:
-        # [-+]? 를 추가하여 음수/양수 부호를 인식할 수 있도록 변경했습니다.
-        match = re.match(r'^([-+]?\d*\.?\d+)', v_str)
-        if match:
-            v = float(match.group(1))
-            if '.' not in v_str:
-                return v / 100.0
-            return v
-        return 0.0
+        v=float(v_str)
+        if '.' not in v_str: return v/100.0
+        return v
     except ValueError: return 0.0
 
 def parse_report_data(text):
@@ -120,7 +115,6 @@ def analyze_report(req: AnalyzeRequest):
                 
         elif trigger_code in ["5100", "5200", "5300"]:
             vrta_max, vrta_min = 0.0, 0.0
-            # 기종별 난기류 값 위치 완벽 분리
             if fleet_type == "NEO":
                 if "S1" in lines_dict and len(lines_dict["S1"])>=1: vrta_max=parse_g(lines_dict["S1"][0])
                 if "S2" in lines_dict and len(lines_dict["S2"])>=1: vrta_min=parse_g(lines_dict["S2"][0])
@@ -130,12 +124,12 @@ def analyze_report(req: AnalyzeRequest):
             
             kpi_data["Turb"]={"VRTA_MAX": vrta_max, "VRTA_MIN": vrta_min}
             
-            if trigger_code in ["5100", "5200"]: # CLEAN CONFIGURATION
+            if trigger_code in ["5100", "5200"]: 
                 if vrta_max >= 2.5 or vrta_min <= -1.0:
                     status, reason="RED", f"Inspection Required (Clean / Flap < 0.5)\n- VRTA MAX: {vrta_max}g, MIN: {vrta_min}g\n- LIMIT: MAX >= +2.5g OR MIN <= -1.0g"
                 else:
                     status, reason="GREEN", f"Normal (Clean / Flap < 0.5)\n- VRTA MAX: {vrta_max}g, MIN: {vrta_min}g\n- LIMIT: MAX >= +2.5g OR MIN <= -1.0g"
-            else: # FLAPS EXTENDED (5300)
+            else: 
                 if vrta_max >= 2.0 or vrta_min <= 0.0:
                     status, reason="RED", f"Inspection Required (Not Clean / Flap > 0.5)\n- VRTA MAX: {vrta_max}g, MIN: {vrta_min}g\n- LIMIT: MAX >= +2.0g OR MIN <= 0.0g"
                 else:
@@ -143,8 +137,11 @@ def analyze_report(req: AnalyzeRequest):
                     
         elif trigger_code in ["5600", "5700"]:
             lata=0.0
-            # S4가 아닌 E1 라인의 첫 번째 값을 가져오고, abs()를 씌워 무조건 양수(절대값)로 만듭니다.
-            if "E1" in lines_dict and len(lines_dict["E1"])>=1: lata=abs(parse_g(lines_dict["E1"][0]))
+            # 마이너스 값을 인식하고 절대값으로 바꾸는 완벽한 로직 적용
+            lata_match = re.search(r'E1\s+([+-]?\d+)', req.text)
+            if lata_match:
+                lata = abs(float(lata_match.group(1)) / 100.0)
+            
             kpi_data["E1"]={"LATA": lata}
             if lata>0.41: status, reason="RED", f"Severe High Lateral\n- LATA: {lata}g\n- LIMIT: > 0.41g"
             elif lata>=0.35: status, reason="AMBER", f"High Lateral\n- LATA: {lata}g\n- LIMIT: >= 0.35g"
@@ -156,6 +153,7 @@ def analyze_report(req: AnalyzeRequest):
     except Exception as e: return {"error": str(e)}
 
 @app.get("/")
+@app.head("/")
 def read_root():
     from fastapi.responses import HTMLResponse
     html_path=os.path.join("templates", "index.html")
